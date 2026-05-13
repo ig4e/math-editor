@@ -1,16 +1,43 @@
 // Sheet → PDF. Uses jsPDF lazily (the lib + its STIX-math font come in
-// at ~120 KB gz). MathLive's convertLatexToMarkup produces SVG which we
-// rasterise via canvas before placing on the PDF.
+// at ~120 KB gz). MathLive's `convertLatexToMarkup` produces HTML/SVG
+// which we rasterise via `html-to-image` (already a dep) before
+// embedding as a PNG.
 //
-// Caveats: the v8 baseline keeps it simple — math renders as the raw
-// LaTeX source under a "Equation:" prefix, not a rendered glyph (PDF
-// font embedding for math is non-trivial). P17 polish can upgrade this
-// via MathJax-node or an in-browser KaTeX → image pipeline.
+// Fallback path: if MathLive markup or html-to-image rasterisation
+// fails (an edge-case LaTeX construct, font not yet warmed up), we
+// degrade to the original monospace LaTeX source.
 
 import type { Sheet } from '../state/types';
+import { convertLatexToMarkup } from 'mathlive';
+import { toPng } from 'html-to-image';
 
 interface SheetPDFOpts {
   filename?: string;
+}
+
+/** Render one math block's LaTeX to a PNG dataURL. Best-effort —
+ *  returns null on failure so the caller can fall back to text. */
+async function rasterMath(latex: string): Promise<{ dataURL: string; width: number; height: number } | null> {
+  try {
+    const markup = convertLatexToMarkup(latex);
+    const host = document.createElement('div');
+    // Offscreen but in the document so MathLive's CSS variables resolve
+    // against the document root.
+    host.style.cssText = 'position:absolute;left:-99999px;top:0;background:white;color:#111;padding:8px;font-size:20px;';
+    host.innerHTML = markup;
+    document.body.appendChild(host);
+    // One frame so layout settles for measurement.
+    await new Promise(requestAnimationFrame);
+    const rect = host.getBoundingClientRect();
+    const width = Math.max(40, Math.ceil(rect.width));
+    const height = Math.max(20, Math.ceil(rect.height));
+    const dataURL = await toPng(host, { pixelRatio: 2, width, height, backgroundColor: '#ffffff' });
+    host.remove();
+    return { dataURL, width, height };
+  } catch (err) {
+    console.warn('[pdf] math rasterise failed, falling back to LaTeX text:', err);
+    return null;
+  }
 }
 
 export async function sheetToPDF(sheet: Sheet, opts: SheetPDFOpts = {}): Promise<Blob> {
@@ -39,18 +66,33 @@ export async function sheetToPDF(sheet: Sheet, opts: SheetPDFOpts = {}): Promise
 
   for (const b of sheet.blocks) {
     if (b.type === 'math') {
-      ensureRoom(40);
-      doc.setFont('helvetica', 'italic');
-      doc.text('Equation:', MARGIN, y);
-      y += 14;
-      doc.setFont('courier', 'normal');
-      const lines = doc.splitTextToSize(b.latex, CONTENT_W) as string[];
-      for (const line of lines) {
-        ensureRoom(14);
-        doc.text(line, MARGIN + 16, y);
+      const png = await rasterMath(b.latex);
+      if (png) {
+        // Scale to fit CONTENT_W if needed — MathLive renders at 20pt so
+        // most lines are well under the page width. Convert px → pt @ 72
+        // dpi (1 pt ≈ 1.33 px). At pixelRatio=2 the dataURL is 2x; the
+        // measured rect is css-px (1x).
+        const ptW = Math.min(CONTENT_W, b.latex.length > 0 ? png.width * 0.75 : 200);
+        const scale = ptW / png.width;
+        const ptH = png.height * scale;
+        ensureRoom(ptH + 12);
+        doc.addImage(png.dataURL, 'PNG', MARGIN, y, ptW, ptH);
+        y += ptH + 4;
+      } else {
+        // Fallback: monospace LaTeX source.
+        ensureRoom(40);
+        doc.setFont('helvetica', 'italic');
+        doc.text('Equation:', MARGIN, y);
         y += 14;
+        doc.setFont('courier', 'normal');
+        const lines = doc.splitTextToSize(b.latex, CONTENT_W) as string[];
+        for (const line of lines) {
+          ensureRoom(14);
+          doc.text(line, MARGIN + 16, y);
+          y += 14;
+        }
+        doc.setFont('helvetica', 'normal');
       }
-      doc.setFont('helvetica', 'normal');
       if (b.note) {
         ensureRoom(14);
         doc.setTextColor(120, 120, 120);
