@@ -124,12 +124,41 @@ interface InjectImageOpts {
   height: number;
 }
 
-export function injectImage(_opts: InjectImageOpts): void {
-  if (!apiRef) return;
-  // Image injection requires registering a file blob via addFiles + a
-  // image-element skeleton referencing it. Phase 4 (Graph 2D Pin-to-
-  // canvas) fills this in.
-  console.info('[inject] injectImage not yet implemented');
+/**
+ * Drop a PNG (data-URL) onto the canvas as an Excalidraw image element.
+ * Registers the file blob via `addFiles` first, then injects an `image`
+ * element referencing the fileId. Each call is one undo step.
+ */
+export function injectImage(opts: InjectImageOpts): void {
+  const api = apiRef;
+  if (!api) return;
+  const fileId = randomFileId();
+  api.addFiles([{
+    id: fileId,
+    dataURL: opts.dataURL as `data:${string}`,
+    mimeType: 'image/png',
+    created: Date.now(),
+    lastRetrieved: Date.now(),
+  } as Parameters<ExcalidrawImperativeAPI['addFiles']>[0][number]]);
+
+  const built = convertToExcalidrawElements([
+    {
+      type: 'image',
+      x: opts.at.x,
+      y: opts.at.y,
+      width: opts.width,
+      height: opts.height,
+      // Excalidraw brands FileId; the runtime value is just a string.
+      fileId: fileId as unknown as `${string}` & { _brand: 'FileId' },
+      status: 'saved',
+      scale: [1, 1],
+    },
+  ]);
+  pushElements(built);
+}
+
+function randomFileId(): string {
+  return `f${Math.random().toString(36).slice(2, 12)}${Date.now().toString(36)}`;
 }
 
 /** Raw escape hatch — push pre-built Excalidraw elements. */
