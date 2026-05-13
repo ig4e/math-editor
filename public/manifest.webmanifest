@@ -1,0 +1,15 @@
+{
+  "name": "Math Notebook",
+  "short_name": "Math",
+  "description": "The ultimate math writing sheet — equations, drawings, graphs, AI.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f4f4ef",
+  "theme_color": "#6366f1",
+  "orientation": "any",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "categories": ["productivity", "education"]
+}

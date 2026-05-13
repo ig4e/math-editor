@@ -13,7 +13,11 @@ import 'mathlive';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 import './index.css';
+import { setupPWA } from './pwa';
 
 const root = document.getElementById('root');
 if (!root) throw new Error('#root not found');
 createRoot(root).render(<App />);
+
+// Service-worker registration is a no-op in dev (see src/pwa.ts).
+setupPWA();

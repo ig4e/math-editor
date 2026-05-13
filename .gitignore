@@ -3,3 +3,26 @@ dist
 .DS_Store
 *.local
 .vite
+*.tsbuildinfo
+
+# deploy artefacts
+.vercel
+.wrangler
+.cloudflared
+# generated from api/*.ts by scripts/build-cf-functions.mjs
+functions/api/
+
+# editor / OS noise
+.idea
+.vscode
+Thumbs.db
+
+# test coverage
+coverage
+.nyc_output
+
+# PWA dev-mode SW
+dev-dist
+
+# logs
+*.log

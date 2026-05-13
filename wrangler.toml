@@ -1,0 +1,11 @@
+# Cloudflare Pages config. `wrangler pages deploy dist` reads this for the
+# project name; edge functions are picked up from functions/api/* (generated
+# from api/*.ts by scripts/build-cf-functions.mjs during the build).
+name = "math-notebook"
+compatibility_date = "2025-09-01"
+pages_build_output_dir = "dist"
+
+# Default: anything matching /api/* is served by a Pages Function; everything
+# else falls back to the static SPA (index.html).
+[build]
+command = "npm run build:cf"

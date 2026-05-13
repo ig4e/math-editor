@@ -1,17 +1,31 @@
-name: Deploy to GitHub Pages
+# Single workflow, three jobs:
+#   build           runs once, uploads `dist/` and `functions/` as artifacts
+#   deploy-vercel   pulls the artifact and `vercel deploy --prebuilt`
+#   deploy-cf       pulls the artifact and `wrangler pages deploy dist`
+#
+# Production deploys are gated by the GitHub environments `production`
+# (configure manual approval on those in the repo settings).
+#
+# Required secrets (configure in repo settings):
+#   VERCEL_TOKEN  VERCEL_ORG_ID  VERCEL_PROJECT_ID
+#   CLOUDFLARE_API_TOKEN  CLOUDFLARE_ACCOUNT_ID
+# Optional secrets (set on the deploy platform, not here):
+#   WOLFRAM_APPID  ENABLE_AI_PROXY  AI_PROXY_ALLOWED_ORIGINS
+
+name: deploy
 
 on:
   push:
+    branches: [main, v2]
+  pull_request:
     branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: pages
+  group: deploy-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -24,18 +38,73 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - run: npm ci
-      - run: npm run build
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - run: npm run typecheck
+      # build + bundle-size gate + emit functions/api for Cloudflare
+      - run: npm run build:cf
+      - uses: actions/upload-artifact@v4
         with:
-          path: ./dist
+          name: build
+          path: |
+            dist
+            functions
+            api
+            vercel.json
+            wrangler.toml
+            package.json
+            package-lock.json
+          retention-days: 7
 
-  deploy:
+  deploy-vercel:
     needs: build
+    if: github.event_name != 'pull_request' && vars.ENABLE_VERCEL_DEPLOY == 'true'
     runs-on: ubuntu-latest
     environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      name: ${{ github.ref == 'refs/heads/main' && 'production' || 'preview' }}
     steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: build
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install Vercel CLI
+        run: npm i -g vercel@latest
+      - name: Pull Vercel env
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          ENV=${{ github.ref == 'refs/heads/main' && 'production' || 'preview' }}
+          vercel pull --yes --environment=$ENV --token=$VERCEL_TOKEN
+      - name: Deploy
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN
+          else
+            vercel deploy --prebuilt --token=$VERCEL_TOKEN
+          fi
+
+  deploy-cf:
+    needs: build
+    if: github.event_name != 'pull_request' && vars.ENABLE_CF_DEPLOY == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'production' || 'preview' }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: build
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=math-notebook --branch=${{ github.head_ref || github.ref_name }}
