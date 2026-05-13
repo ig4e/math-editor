@@ -20,8 +20,8 @@
 // `toTextStreamResponse()`. Client side decodes via the standard
 // `Response.body.getReader()` loop in src/ai/proxyStream.ts.
 
-import { badRequest, methodNotAllowed, preflight, json, type EdgeHandler } from './_core';
-import { toCloudflare, toVercel } from './_adapt';
+import { badRequest, methodNotAllowed, preflight, json, type EdgeHandler } from './_core.js';
+import { toCloudflare, toVercel } from './_adapt.js';
 
 type ProviderId = 'anthropic' | 'openai' | 'google' | 'xai' | 'mistral' | 'groq' | 'openai-compat';
 

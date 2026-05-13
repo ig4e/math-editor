@@ -2,8 +2,8 @@
 // and it answers with the platform + a timestamp. The Wolfram, AI-proxy,
 // and share-link edge functions in later phases follow the same shape.
 
-import { json, preflight, type EdgeHandler } from './_core';
-import { toCloudflare, toVercel } from './_adapt';
+import { json, preflight, type EdgeHandler } from './_core.js';
+import { toCloudflare, toVercel } from './_adapt.js';
 
 const handler: EdgeHandler = (req, ctx) => {
   const pre = preflight(req);

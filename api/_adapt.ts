@@ -9,7 +9,7 @@
 // scripts/build-cf-functions.mjs picks `onRequest` out and copies it into
 // functions/api/ at build time so Cloudflare's auto-routing finds it.
 
-import type { EdgeHandler, EdgeContext } from './_core';
+import type { EdgeHandler, EdgeContext } from './_core.js';
 
 // ----- Cloudflare Pages Function adapter --------------------------------
 // CF passes a context object with { request, env, waitUntil, ... }.

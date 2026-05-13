@@ -12,8 +12,8 @@
 // We don't proxy auth or PII — the only secret is the AppID, which is
 // kept server-side and reused for every call.
 
-import { json, text, badRequest, methodNotAllowed, preflight, type EdgeHandler } from './_core';
-import { toCloudflare, toVercel } from './_adapt';
+import { json, text, badRequest, methodNotAllowed, preflight, type EdgeHandler } from './_core.js';
+import { toCloudflare, toVercel } from './_adapt.js';
 
 const SHORT_ANSWERS = 'https://api.wolframalpha.com/v1/result';
 const FULL_RESULTS = 'https://api.wolframalpha.com/v2/query';
