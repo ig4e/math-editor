@@ -28,6 +28,10 @@ If you're reading this for the first time, take the docs in this order:
 - [`adding-a-solver-backend.md`](./adding-a-solver-backend.md) — wiring a new math solver / CAS.
 - [`verification.md`](./verification.md) — the per-phase smoke checks we run before a phase is "done".
 
+## Live progress docs
+
+- [`phase-1-progress.md`](./phase-1-progress.md) — Phase 1 execution plan & sub-commit checklist.
+
 ## Where the source code lives
 
 A quick map (see [`architecture.md`](./architecture.md) for the full layout):

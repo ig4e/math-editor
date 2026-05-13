@@ -82,12 +82,13 @@ The foundation comprises **eight concerns**; nothing in Phase 1 ships until all 
 
 **Bundle budget for Phase 1**: main entry under **300 KB gzipped**. The 800 KB total budget accommodates Excalidraw landing lazily in Phase 2.
 
-### Phase 2 — Excalidraw integration (extend its UI, don't replace it)
+### Phase 2 — Excalidraw integration (selective fork + extend)
 
-**Excalidraw's own UI is the canvas chrome.** We don't build a competing shape toolbar, menu, or footer. We use Excalidraw's native UI as the starting point and **extend** it via its documented slots. See [`excalidraw-integration.md`](./excalidraw-integration.md) for the full surface.
+**Excalidraw is the visual foundation.** We don't just embed the library — we also **selectively fork** UI components, helpers, and patterns from the `excalidraw-app` source (the excalidraw.com webapp) so we don't rebuild solved-UX-problems from scratch. The forked code is vendored under `src/vendor/excalidraw-app/` with attribution to the upstream MIT license. Our flexlayout workspace still owns the panel docking; the forked Excalidraw bits supply the canvas chrome, sidebars, library browser, share dialog, and welcome screen patterns. See [`excalidraw-integration.md`](./excalidraw-integration.md) for the full surface and the vendor inventory.
 
 - Delete the hand-rolled drawing layer: `MarksLayer.tsx`, `recognizer.ts`, `shapeGeom.ts`, `slices/{strokes,shapes,links}.ts`, the pen / eraser / link tools and hooks.
-- `panels/canvas/CanvasPanel.tsx` hosts `<Excalidraw>` with its native shape palette, zoom + undo / redo, and library panel all visible.
+- **Vendor selectively from excalidraw-app**: `App.tsx` skeleton (sans collab/jotai/firebase), `share/ShareDialog`, `share-link.ts` compression helpers, `data/encryption.ts`, `AppFooter`, `AppMainMenu`, `AppWelcomeScreen`, `CommandPalette` cues, mobile responsive patterns. Each vendored file keeps its upstream header and license note; we adapt it to our Zustand store and design tokens.
+- `panels/canvas/CanvasPanel.tsx` hosts `<Excalidraw>` with its native shape palette, zoom + undo / redo, and library panel all visible — wrapped in the vendored AppFooter / AppMainMenu / AppWelcomeScreen so the chrome feels like Excalidraw, not a half-finished imitation.
 - Extend via `<MainMenu>`, `renderTopRightUI`, `<Footer>`, `<WelcomeScreen>`, `renderCustomStats`, and a custom selection-floating toolbar.
 - `excalidrawAPI` captured in `scenesSlice`. `onChange` debounces (250 ms) into `scenesSlice.updateScene`.
 - `MathOverlay.tsx` renders math blocks positioned via `sceneCoordsToViewportCoords`.

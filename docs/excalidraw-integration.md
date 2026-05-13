@@ -2,6 +2,15 @@
 
 Excalidraw is not just a doodle layer. It's the **universal visual scaffold** for the entire app. Every panel can drop visuals onto the canvas, and every connection between things is a real Excalidraw element. That's what makes the app feel unified instead of "a bunch of panels".
 
+## Two layers: NPM library + selective fork
+
+We use Excalidraw at **two layers** to avoid rebuilding solved-UX-problems from scratch:
+
+1. **`@excalidraw/excalidraw` (NPM)** — the canvas engine + native UI (shape palette, library, zoom controls, MainMenu). Embedded inside our flexlayout Canvas panel.
+2. **Selective fork of `excalidraw-app`** — vendored under `src/vendor/excalidraw-app/`, with each file retaining its MIT header. We cherry-pick the UX components we want — `App` shell wiring, `ShareDialog`, `share-link.ts` compression, `data/encryption.ts`, `AppFooter`, `AppMainMenu`, `AppWelcomeScreen`, mobile-responsive layout patterns — and adapt them to our Zustand store and Tailwind tokens.
+
+The fork is **not wholesale**: we leave behind their Jotai state (we use Zustand), their Firebase collab (we use Yjs + y-webrtc), their analytics, and their app-specific routing. We take the UI patterns and the share/encryption helpers.
+
 ## Principle: extend Excalidraw's UI, don't replace it
 
 Excalidraw's own UI is the canvas chrome. We don't build a competing shape toolbar, a competing menu, or a competing footer. The user's muscle memory from any other Excalidraw app should carry over.
@@ -120,3 +129,32 @@ No backwards-compatibility code: greenfield project, fresh persist key. Anything
 ## Theme
 
 `<Excalidraw theme>` is bound to `prefsSlice.theme`. Toggling the app theme flips Excalidraw's theme in lockstep.
+
+## Vendor inventory (selective fork)
+
+Vendored files live under `src/vendor/excalidraw-app/` and each one keeps its upstream filepath comment + MIT license header. The current inventory (kept in sync as Phase 2 progresses):
+
+| Vendored path | Upstream | What we use it for |
+|---|---|---|
+| `App.tsx` (skeleton) | `excalidraw-app/App.tsx` | App shell wiring: scene save/restore, library, sidebar plumbing — minus collab/Firebase. |
+| `data/encryption.ts` | `excalidraw-app/data/encryption.ts` | AES-GCM helpers for share-link encryption + BYOK key storage. |
+| `data/share-link.ts` | `excalidraw-app/data/index.ts` | Gzip + base64 compression for sheet → URL hash. |
+| `share/ShareDialog.tsx` | `excalidraw-app/share/ShareDialog.tsx` | Share / "Live collab" / Export dialog UX. |
+| `components/AppFooter.tsx` | `excalidraw-app/components/AppFooter.tsx` | Bottom-status pattern (active provider, variable count, Cmd+K hint). |
+| `components/AppMainMenu.tsx` | `excalidraw-app/components/AppMainMenu.tsx` | MainMenu children — we add math-specific items alongside theirs. |
+| `components/AppWelcomeScreen.tsx` | `excalidraw-app/components/AppWelcomeScreen.tsx` | First-run welcome that uses Excalidraw's WelcomeScreen primitives. |
+| `components/CommandPaletteCommands.ts` | `excalidraw-app/components/CommandPaletteCommands.ts` | List of Excalidraw-side palette commands we surface in our Cmd+K. |
+
+Files we **don't** vendor: `collab/*` (replaced by Yjs in P11), `app-jotai.ts` (we use Zustand), `*firebase*`, `*analytics*`, `*sentry*`.
+
+### License / attribution
+
+Excalidraw is MIT-licensed. Every vendored file MUST keep its original copyright header. The top-level `NOTICE` (added in Phase 2) lists Excalidraw with its license URL and our adaptation notes.
+
+### Update cadence
+
+Excalidraw moves fast. Our vendor is a **frozen snapshot** updated deliberately. When upstream changes a file we vendored:
+
+1. Diff `git log` upstream for the file since our snapshot date.
+2. Decide whether to pull the change (security fix → yes; cosmetic refactor → defer).
+3. Apply minimum diff to our copy, re-test, commit with a "sync vendor/excalidraw-app/<file>" message that pins the upstream SHA.
