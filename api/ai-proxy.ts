@@ -23,7 +23,10 @@
 import { badRequest, methodNotAllowed, preflight, json, type EdgeHandler } from './_core.js';
 import { toCloudflare, toVercel } from './_adapt.js';
 
-type ProviderId = 'anthropic' | 'openai' | 'google' | 'xai' | 'mistral' | 'groq' | 'openai-compat';
+type ProviderId =
+  | 'anthropic' | 'openai' | 'google' | 'xai' | 'mistral' | 'groq'
+  | 'cohere' | 'deepseek' | 'cerebras' | 'perplexity'
+  | 'openai-compat';
 
 interface ProxyBody {
   providerId: ProviderId;
@@ -98,6 +101,10 @@ function lookupKey(provider: ProviderId, ctx: { env: (n: string) => string | und
     case 'xai':           return ctx.env('XAI_API_KEY');
     case 'mistral':       return ctx.env('MISTRAL_API_KEY');
     case 'groq':          return ctx.env('GROQ_API_KEY');
+    case 'cohere':        return ctx.env('COHERE_API_KEY');
+    case 'deepseek':      return ctx.env('DEEPSEEK_API_KEY');
+    case 'cerebras':      return ctx.env('CEREBRAS_API_KEY');
+    case 'perplexity':    return ctx.env('PERPLEXITY_API_KEY');
     case 'openai-compat': return ctx.env('OPENAI_COMPAT_API_KEY');
   }
 }
@@ -129,6 +136,22 @@ async function buildModel(providerId: ProviderId, model: string, apiKey: string,
     case 'groq': {
       const { createGroq } = await import('@ai-sdk/groq');
       return createGroq({ apiKey })(model);
+    }
+    case 'cohere': {
+      const { createCohere } = await import('@ai-sdk/cohere');
+      return createCohere({ apiKey })(model);
+    }
+    case 'deepseek': {
+      const { createDeepSeek } = await import('@ai-sdk/deepseek');
+      return createDeepSeek({ apiKey })(model);
+    }
+    case 'cerebras': {
+      const { createCerebras } = await import('@ai-sdk/cerebras');
+      return createCerebras({ apiKey })(model);
+    }
+    case 'perplexity': {
+      const { createPerplexity } = await import('@ai-sdk/perplexity');
+      return createPerplexity({ apiKey })(model);
     }
     case 'openai-compat': {
       const { createOpenAI } = await import('@ai-sdk/openai');

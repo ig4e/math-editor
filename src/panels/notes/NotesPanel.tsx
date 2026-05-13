@@ -11,6 +11,7 @@ import { useActiveSheet } from '../../state/selectors';
 import { PanelHeader, PanelStatus, IconButton } from '../../components/common';
 import { cx } from '../../utils/cx';
 import { PyodideCodeBlock } from './PyodideCodeBlock';
+import { MermaidBlock } from './MermaidBlock';
 import { renderInlineMath } from './renderMath';
 
 export default function NotesPanel() {
@@ -40,14 +41,11 @@ export default function NotesPanel() {
   const rendered = useMemo(() => {
     try {
       const tokens = marked.lexer(draft);
-      const parts: { kind: 'html' | 'python'; payload: string }[] = [];
+      const parts: { kind: 'html' | 'python' | 'mermaid'; payload: string }[] = [];
       let buf: Tokens.Generic[] = [];
       const flush = () => {
         if (buf.length === 0) return;
         let html = marked.parser(buf as never) as string;
-        // Render KaTeX math inside the produced HTML. We only walk text
-        // nodes via a regex pass; this preserves marked's inline HTML
-        // / link / code-span handling.
         html = pipeMath(html);
         parts.push({ kind: 'html', payload: html });
         buf = [];
@@ -56,6 +54,9 @@ export default function NotesPanel() {
         if (t.type === 'code' && (t as Tokens.Code).lang === 'python') {
           flush();
           parts.push({ kind: 'python', payload: (t as Tokens.Code).text });
+        } else if (t.type === 'code' && (t as Tokens.Code).lang === 'mermaid') {
+          flush();
+          parts.push({ kind: 'mermaid', payload: (t as Tokens.Code).text });
         } else {
           buf.push(t as Tokens.Generic);
         }
@@ -106,11 +107,11 @@ export default function NotesPanel() {
               '[&_a]:text-accent [&_a]:underline',
             )}
           >
-            {rendered.map((p, i) =>
-              p.kind === 'python'
-                ? <PyodideCodeBlock key={i} code={p.payload} />
-                : <div key={i} dangerouslySetInnerHTML={{ __html: p.payload }} />,
-            )}
+            {rendered.map((p, i) => {
+              if (p.kind === 'python') return <PyodideCodeBlock key={i} code={p.payload} />;
+              if (p.kind === 'mermaid') return <MermaidBlock key={i} source={p.payload} />;
+              return <div key={i} dangerouslySetInnerHTML={{ __html: p.payload }} />;
+            })}
           </div>
         )}
       </div>

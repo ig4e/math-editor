@@ -7,4 +7,8 @@ import './google';
 import './xai';
 import './mistral';
 import './groq';
+import './cohere';
+import './deepseek';
+import './cerebras';
+import './perplexity';
 import './openai-compat';

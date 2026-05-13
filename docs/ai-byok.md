@@ -12,8 +12,12 @@ If you don't want a key in your browser, an alternate **server-side proxy** path
 | OpenAI | `OPENAI_API_KEY` | GPT family; supports `dangerouslyAllowBrowser` |
 | Google | `GOOGLE_API_KEY` | Gemini family |
 | xAI | `XAI_API_KEY` | Grok family |
-| Mistral | `MISTRAL_API_KEY` | Mistral / Codestral |
+| Mistral | `MISTRAL_API_KEY` | Mistral / Codestral (CORS-blocked in browser — use the server-side proxy) |
 | Groq | `GROQ_API_KEY` | host of Llama / Mixtral / etc. |
+| Cohere | `COHERE_API_KEY` | Command family |
+| DeepSeek | `DEEPSEEK_API_KEY` | first-class adapter (was reachable via openai-compat before); includes their reasoning model |
+| Cerebras | `CEREBRAS_API_KEY` | wafer-scale Llama / Qwen inference |
+| Perplexity | `PERPLEXITY_API_KEY` | Sonar — answer-grounded with citations |
 | **OpenAI-compatible** | `apiKey` + `baseURL` | escape hatch for any OpenAI-compatible API |
 
 The OpenAI-compatible adapter covers DeepSeek, Qwen / Aliyun DashScope, Moonshot, Zhipu, MiniMax, Baichuan, OpenRouter, Together, Fireworks, Ollama (local), LM Studio (local), vLLM (self-host), and anything else that speaks the OpenAI wire format.
@@ -78,7 +82,11 @@ For deployments that want stronger guarantees (e.g. shared kiosks, classroom ins
 | `XAI_API_KEY` | …                       | |
 | `MISTRAL_API_KEY` | …                   | Required for Mistral — there is no browser-direct path (CORS-blocked). |
 | `GROQ_API_KEY` | …                      | |
-| `OPENAI_COMPAT_API_KEY` | …             | Pair with `OPENAI_COMPAT_BASE_URL` for DeepSeek / Qwen / etc. |
+| `COHERE_API_KEY` | …                    | |
+| `DEEPSEEK_API_KEY` | …                  | |
+| `CEREBRAS_API_KEY` | …                  | |
+| `PERPLEXITY_API_KEY` | …                | |
+| `OPENAI_COMPAT_API_KEY` | …             | Pair with `OPENAI_COMPAT_BASE_URL` for Qwen / Moonshot / Ollama / etc. |
 
 The browser opts in via **Settings → API keys → "Use server-side proxy"**. Even with that toggle off, the proxy is the **only** path for Mistral because the provider's `info.supportsBrowser` is `false` in our registry. The proxy strips tool calls in v1 — only text streams flow through.
 

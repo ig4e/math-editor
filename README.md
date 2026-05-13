@@ -18,9 +18,14 @@ matrix, numerics, ML lab, settings.
 ## Highlights
 
 - **Canvas** — Excalidraw as the universal visual layer. Math blocks
-  live as anchors so lasso / marquee / move / align all work natively
-  on a mix of math and shapes. Selection-floating toolbar surfaces
-  Solve / Solve system / Graph / Ask AI directly above the selection.
+  are scene-native `embeddable` elements: drag, resize, zoom, undo,
+  delete, select all work natively. Selection-floating toolbar
+  surfaces Solve / Solve system / Graph / Ask AI directly above the
+  selection. Excalidraw's library panel ships pre-seeded with our
+  11 math-diagram templates (number line, unit circle, Venn, MLP,
+  computation graph, …) and the **Generate diagram (Mermaid)** item
+  in the hamburger menu wires Excalidraw's built-in text-to-diagram
+  dialog to your configured AI provider.
 - **Solver + Variables** — compute-engine + mathsteps with step-by-step
   rewrites; the Variables panel detects every `name = number` in your
   sheet and exposes a live slider. System solve draws bound arrows from
@@ -30,14 +35,17 @@ matrix, numerics, ML lab, settings.
 - **Graph 3D (three.js + @react-three/fiber + drei)** — surfaces,
   parametric surfaces, parametric curves, vector fields, point clouds.
   Pin a snapshot to the canvas.
-- **AI + BYOK** — Anthropic, OpenAI, Google, xAI, Mistral, Groq + a
-  generic OpenAI-compatible adapter for DeepSeek / Qwen / Moonshot /
-  Zhipu / Ollama / LM Studio / vLLM / OpenRouter / Together / Fireworks.
+- **AI + BYOK** — Anthropic, OpenAI, Google, xAI, Mistral, Groq, Cohere,
+  DeepSeek, Cerebras, Perplexity + a generic OpenAI-compatible adapter
+  for Qwen / Moonshot / Zhipu / Ollama / LM Studio / vLLM / OpenRouter /
+  Together / Fireworks / etc.
   Keys live in IndexedDB encrypted with WebCrypto AES-GCM. Optional
   server-side proxy mode for keys-never-leave-server deployments and
   for Mistral (no browser CORS).
-- **Notes** — markdown with `python` fenced code blocks that run
-  against Pyodide inline, output captured below.
+- **Notes** — markdown with `python` fenced blocks that run against
+  Pyodide inline, `mermaid` fenced blocks rendered as live diagrams,
+  and `$...$` / `$$...$$` LaTeX rendered with KaTeX. Output captured
+  below each code block.
 - **Reference + Inspector** — searchable formula sheet; MathJSON AST
   viewer for any selected block.
 - **Sharing + exports** — share-link (gzipped sheet baked into the URL

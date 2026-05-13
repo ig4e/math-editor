@@ -25,6 +25,7 @@ import { CanvasMainMenu } from '../panels/canvas/CanvasMainMenu';
 import { CanvasFooter } from '../panels/canvas/CanvasFooter';
 import { CanvasWelcome } from '../panels/canvas/CanvasWelcome';
 import { CanvasTopRight } from '../panels/canvas/CanvasTopRight';
+import { CanvasTTDDialog } from '../panels/canvas/CanvasTTDDialog';
 import { SelectionToolbar } from '../panels/canvas/SelectionToolbar';
 import { useEmbeddableSync, isBlockLink, blockIdFromElement } from '../panels/canvas/anchors';
 import { setExcalidrawAPI, setSidebarToggler } from '../panels/canvas/inject';
@@ -109,6 +110,27 @@ export function AppShell() {
     return () => setSidebarToggler(null);
   }, [setActiveSidebarTab]);
 
+  // Pre-load our curated math-diagram templates as Excalidraw's
+  // default library on first run. We fetch the lib JSON (a single
+  // file under public/), parse it, and seed the Library panel. The
+  // PWA precaches the file so this works offline after the first
+  // warm load.
+  const [libraryItems, setLibraryItems] = useState<unknown[] | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch('/math-templates.excalidrawlib');
+        if (!res.ok) return;
+        const data = await res.json() as { libraryItems?: unknown[] };
+        if (!cancelled && Array.isArray(data.libraryItems)) {
+          setLibraryItems(data.libraryItems);
+        }
+      } catch { /* offline / not deployed — ignore */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   return (
     <div className="absolute inset-0 bg-app">
       <Excalidraw
@@ -124,6 +146,12 @@ export function AppShell() {
               ? { name: SIDEBAR_NAME, tab: activeSidebarTab }
               : null,
           },
+          // Seed Excalidraw's Library panel with our math-diagram
+          // templates so they show up next to the user's saved
+          // shapes. Items will hydrate after the library JSON loads.
+          ...(libraryItems
+            ? { libraryItems: libraryItems as never }
+            : {}),
         }}
         onChange={onChange}
         theme="dark"
@@ -148,6 +176,7 @@ export function AppShell() {
         <CanvasMainMenu />
         <CanvasFooter />
         <CanvasWelcome />
+        <CanvasTTDDialog />
         <Sidebar
           name={SIDEBAR_NAME}
           docked
