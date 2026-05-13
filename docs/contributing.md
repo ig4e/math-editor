@@ -53,9 +53,11 @@ Three registries — Panel, Command, Keybind — are the **only** places feature
 
 ## Testing
 
-- Unit-test the foundation contracts: registering a fake panel makes it appear; registering a fake command makes it appear in the palette; theme persists across reload; layout persists across reload.
+- Run unit tests with `npm test` (one-shot) or `npm run test:watch` (watcher). Vitest + jsdom; tests live under `src/**/__tests__/*.test.ts(x)`.
+- Foundation contract tests live at `src/workspace/__tests__/PanelRegistry.test.ts`, `src/commands/__tests__/commands.test.ts`, `src/keybinds/__tests__/defaults.test.ts`, `src/state/__tests__/persist.test.ts` — they assert the contracts every later phase depends on.
+- Vendored modules under `src/vendor/excalidraw-app/` have round-trip tests (`encryption.test.ts`) so an upstream sync doesn't silently break the share / BYOK paths.
 - Unit-test math helpers (parsing, variable detection, anchor sync) — they're pure functions, easy and high-value.
-- Integration test critical user flows (solve → result block; pin to canvas; share link round-trip) — Playwright.
+- Heavy components (Excalidraw, MathLive) are stubbed in tests via `src/__tests__/excalidraw-shim.ts` and `src/__tests__/mathlive-shim.ts`; integration coverage of those happens through the manual smoke checks listed in [`verification.md`](./verification.md) (and eventually Playwright when we add it in P17 polish).
 
 ## Performance
 

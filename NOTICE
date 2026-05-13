@@ -1,0 +1,117 @@
+Math Notebook
+=============
+
+This project bundles, depends on, and selectively vendors third-party
+open-source software. This NOTICE file records the major attributions
+in one place. Full license texts ship with each package in
+`node_modules/<pkg>/LICENSE` and (for vendored snapshots) in the
+corresponding file headers under `src/vendor/`.
+
+
+-------------------------------------------------------------------------------
+Excalidraw — https://github.com/excalidraw/excalidraw
+-------------------------------------------------------------------------------
+
+Copyright (c) 2020 Excalidraw and contributors.
+License: MIT (https://github.com/excalidraw/excalidraw/blob/master/LICENSE)
+
+We use the published `@excalidraw/excalidraw` npm package at runtime
+AND we selectively vendor adapted modules from the `excalidraw-app/`
+source tree (the excalidraw.com webapp). The vendored files live under
+`src/vendor/excalidraw-app/` and each retains an SPDX header pointing
+at the upstream snapshot. See `src/vendor/excalidraw-app/README.md`
+for the inventory and the sync policy.
+
+
+-------------------------------------------------------------------------------
+JSXGraph — https://jsxgraph.org
+-------------------------------------------------------------------------------
+
+Copyright (c) 2008-2025 JSXGraph contributors.
+License: MIT or LGPL v3+ (dual)
+         (https://github.com/jsxgraph/jsxgraph/blob/master/LICENSE.MIT)
+
+We use `jsxgraph` at runtime AND we vendor a static snapshot of its
+distrib CSS (`src/vendor/jsxgraph.vendor.css`) because the upstream
+package.json `exports` map blocks deep-CSS imports. The vendored CSS
+keeps its original license header.
+
+
+-------------------------------------------------------------------------------
+MathLive — https://cortexjs.io/mathlive
+-------------------------------------------------------------------------------
+
+Copyright (c) Arnaud Bonnet (Cortex JS).
+License: MIT (https://github.com/arnog/mathlive/blob/master/LICENSE.txt)
+
+Used at runtime as `mathlive`. We bundle its fonts in production for
+offline use.
+
+
+-------------------------------------------------------------------------------
+compute-engine — https://cortexjs.io/compute-engine
+-------------------------------------------------------------------------------
+
+Copyright (c) Cortex JS.
+License: MIT
+
+Used at runtime as `@cortex-js/compute-engine`. The math runtime.
+
+
+-------------------------------------------------------------------------------
+mathsteps — https://github.com/socraticorg/mathsteps
+-------------------------------------------------------------------------------
+
+Copyright (c) Socratic.
+License: Apache-2.0
+
+Used at runtime as `mathsteps` for step-by-step rewrites.
+
+
+-------------------------------------------------------------------------------
+flexlayout-react — https://github.com/caplin/FlexLayout
+-------------------------------------------------------------------------------
+
+Copyright (c) Caplin Systems Ltd.
+License: ISC
+
+Used at runtime as `flexlayout-react` for the dockable workspace.
+
+
+-------------------------------------------------------------------------------
+cmdk — https://github.com/pacocoursey/cmdk
+-------------------------------------------------------------------------------
+
+Copyright (c) Paco Coursey.
+License: MIT
+
+Used at runtime as `cmdk` for the Cmd+K command palette.
+
+
+-------------------------------------------------------------------------------
+tinykeys — https://github.com/jamiebuilds/tinykeys
+-------------------------------------------------------------------------------
+
+Copyright (c) Jamie Kyle.
+License: MIT
+
+Used at runtime as `tinykeys` for the keybind runtime.
+
+
+-------------------------------------------------------------------------------
+Radix UI — https://www.radix-ui.com
+-------------------------------------------------------------------------------
+
+Copyright (c) WorkOS Inc.
+License: MIT
+
+Used at runtime as `@radix-ui/react-*` packages — Tooltip, Dialog,
+Select, Slider, Switch, Tabs, DropdownMenu.
+
+
+-------------------------------------------------------------------------------
+React, Vite, Tailwind, Zustand, immer, zundo, idb-keyval, nanoid,
+clsx, pako, html-to-image, workbox-window, vite-plugin-pwa
+-------------------------------------------------------------------------------
+
+All MIT or Apache-2.0; see the corresponding LICENSE in node_modules/.
