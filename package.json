@@ -44,6 +44,7 @@
     "marked": "^18.0.3",
     "mathlive": "^0.105.0",
     "mathsteps": "^0.2.0",
+    "ml-matrix": "^6.12.2",
     "nanoid": "^5.1.11",
     "pako": "^2.1.0",
     "perfect-freehand": "^1.2.3",
