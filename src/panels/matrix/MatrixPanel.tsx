@@ -1,11 +1,17 @@
 // Matrix panel — editable spreadsheet + buttons for det, inverse,
-// transpose, rank, RREF, eigenvalues, LU, QR. "Drop into sheet"
-// inserts the result LaTeX as a math block on the active canvas.
+// transpose, rank, RREF, eigenvalues, LU, QR, char-poly. "Drop into
+// sheet" inserts the result LaTeX as a math block on the active canvas.
+//
+// Two modes:
+//   - Numeric  : ml-matrix ops (synchronous, no network)
+//   - Symbolic : SymPy via Pyodide (10 MB lazy download, exact results +
+//                steps). On Pyodide failure, eig/LU/QR fall through to
+//                their numeric counterparts.
 
 import { useCallback, useState } from 'react';
 import { useStore } from '../../state/store';
 import {
-  PanelHeader, PanelStatus, Button, Card, IconButton, Banner,
+  PanelHeader, PanelStatus, Button, Card, IconButton, Banner, Switch, Field, Spinner,
 } from '../../components/common';
 import { Icon } from '../../components/Icons';
 import { ReadOnlyMathField } from '../solver/ReadOnlyMathField';
@@ -13,15 +19,42 @@ import {
   opDet, opInverse, opTranspose, opRank, opRREF, opEigenvalues, opLU, opQR,
   type MatrixData, type OpResult,
 } from './ops';
+import {
+  opEigenvaluesSymbolic, opLUSymbolic, opQRSymbolic, opCharacteristicPolynomial,
+} from './symbolicOps';
 import { cx } from '../../utils/cx';
 
-type OpId = 'det' | 'inv' | 'transpose' | 'rank' | 'rref' | 'eig' | 'lu' | 'qr';
+type OpId = 'det' | 'inv' | 'transpose' | 'rank' | 'rref' | 'eig' | 'lu' | 'qr' | 'charpoly';
 
 const initial: MatrixData = [[1, 2, 3], [4, 5, 6], [7, 8, 10]];
+
+interface OpSpec {
+  label: string;
+  /** Numeric runner. */
+  numeric: (d: MatrixData) => OpResult;
+  /** Symbolic runner; if absent, numeric runs in both modes. */
+  symbolic?: (d: MatrixData) => Promise<OpResult>;
+  /** Symbolic-only op (charpoly) — disabled in numeric mode. */
+  symbolicOnly?: boolean;
+}
+
+const OPS: Record<OpId, OpSpec> = {
+  det:       { label: 'det',     numeric: opDet },
+  inv:       { label: 'inverse', numeric: opInverse },
+  transpose: { label: 'A^T',     numeric: opTranspose },
+  rank:      { label: 'rank',    numeric: opRank },
+  rref:      { label: 'RREF',    numeric: opRREF },
+  eig:       { label: 'eigvals', numeric: opEigenvalues, symbolic: opEigenvaluesSymbolic },
+  lu:        { label: 'LU',      numeric: opLU, symbolic: opLUSymbolic },
+  qr:        { label: 'QR',      numeric: opQR, symbolic: opQRSymbolic },
+  charpoly:  { label: 'char-poly', numeric: () => ({ ok: false, error: 'Switch to Symbolic mode for char-poly.' }), symbolic: opCharacteristicPolynomial, symbolicOnly: true },
+};
 
 export default function MatrixPanel() {
   const [data, setData] = useState<MatrixData>(initial);
   const [result, setResult] = useState<{ id: OpId; r: OpResult } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [symbolic, setSymbolic] = useState(false);
   const toast = useStore((s) => s.toast);
   const addMathBlock = useStore((s) => s.addMathBlock);
 
@@ -41,8 +74,19 @@ export default function MatrixPanel() {
   const removeRow = () => setData((cur) => cur.length > 1 ? cur.slice(0, -1) : cur);
   const removeCol = () => setData((cur) => (cur[0]?.length ?? 0) > 1 ? cur.map((row) => row.slice(0, -1)) : cur);
 
-  const run = (id: OpId) => {
-    setResult({ id, r: OPS[id].run(data) });
+  const run = async (id: OpId) => {
+    const spec = OPS[id];
+    if (symbolic && spec.symbolic) {
+      setBusy(true);
+      try {
+        const r = await spec.symbolic(data);
+        setResult({ id, r });
+      } finally {
+        setBusy(false);
+      }
+    } else {
+      setResult({ id, r: spec.numeric(data) });
+    }
   };
 
   const pin = () => {
@@ -66,16 +110,26 @@ export default function MatrixPanel() {
         }
       />
       <div className="flex items-center gap-1 px-2 h-9 border-b border-border-soft bg-surface-2 overflow-x-auto shrink-0">
-        {(Object.keys(OPS) as OpId[]).map((id) => (
-          <Button
-            key={id}
-            size="sm"
-            variant={result?.id === id ? 'primary' : 'secondary'}
-            onClick={() => run(id)}
-          >
-            {OPS[id].label}
-          </Button>
-        ))}
+        {(Object.keys(OPS) as OpId[]).map((id) => {
+          const disabled = OPS[id].symbolicOnly && !symbolic;
+          return (
+            <Button
+              key={id}
+              size="sm"
+              variant={result?.id === id ? 'primary' : 'secondary'}
+              onClick={() => void run(id)}
+              disabled={busy || disabled}
+            >
+              {OPS[id].label}
+            </Button>
+          );
+        })}
+        <div className="flex-1" />
+        <Field label="Symbolic" inline rightSlot={
+          <Switch checked={symbolic} onCheckedChange={setSymbolic} ariaLabel="Symbolic mode" />
+        }>
+          {() => null}
+        </Field>
       </div>
       <div className="flex-1 overflow-auto p-3 flex flex-col gap-3">
         <Card title={`Source (${data.length}×${data[0]?.length ?? 0})`}>
@@ -108,10 +162,18 @@ export default function MatrixPanel() {
           </div>
         </Card>
 
-        {result && (
+        {busy && (
+          <Card title="Working…">
+            <div className="flex items-center gap-2 text-sm text-fg-muted">
+              <Spinner size="sm" /> Running SymPy via Pyodide…
+            </div>
+          </Card>
+        )}
+
+        {result && !busy && (
           result.r.ok && result.r.latex ? (
             <Card
-              title={`Result — ${OPS[result.id].label}`}
+              title={`Result — ${OPS[result.id].label}${symbolic && OPS[result.id].symbolic ? ' (symbolic)' : ''}`}
               tone="accent"
               titleActions={
                 <Button size="sm" variant="ghost" onClick={pin}>
@@ -120,6 +182,9 @@ export default function MatrixPanel() {
               }
             >
               <ReadOnlyMathField latex={result.r.latex} />
+              {result.r.error && (
+                <div className="mt-1 text-xs text-warning">{result.r.error}</div>
+              )}
               {result.r.steps && result.r.steps.length > 1 && (
                 <details className="mt-2">
                   <summary className="text-xs text-fg-muted cursor-pointer">
@@ -145,19 +210,9 @@ export default function MatrixPanel() {
       </div>
       <PanelStatus>
         <span>{data.length} × {data[0]?.length ?? 0}</span>
+        <span>· {symbolic ? 'Symbolic (SymPy)' : 'Numeric (ml-matrix)'}</span>
         {result?.r.ok && <span>· last op: {OPS[result.id].label}</span>}
       </PanelStatus>
     </div>
   );
 }
-
-const OPS: Record<OpId, { label: string; run: (d: MatrixData) => OpResult }> = {
-  det:       { label: 'det',     run: opDet },
-  inv:       { label: 'inverse', run: opInverse },
-  transpose: { label: 'A^T',     run: opTranspose },
-  rank:      { label: 'rank',    run: opRank },
-  rref:      { label: 'RREF',    run: opRREF },
-  eig:       { label: 'eigvals', run: opEigenvalues },
-  lu:        { label: 'LU',      run: opLU },
-  qr:        { label: 'QR',      run: opQR },
-};
