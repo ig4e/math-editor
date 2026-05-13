@@ -39,6 +39,8 @@ jobs:
           cache: 'npm'
       - run: npm ci
       - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run check:contrast
       - run: npm test
       # build + bundle-size gate + emit functions/api for Cloudflare
       - run: npm run build:cf

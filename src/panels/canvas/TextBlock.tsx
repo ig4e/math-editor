@@ -68,6 +68,7 @@ function HeaderButton({
   icon, label, onClick, variant,
 }: { icon: 'copy' | 'trash'; label: string; onClick(): void; variant?: 'danger' }) {
   return (
+    // eslint-disable-next-line no-restricted-syntax -- 20×20 micro-affordance inside a draggable block header; mirrors MathBlock
     <button
       type="button"
       aria-label={label}

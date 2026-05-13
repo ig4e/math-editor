@@ -187,6 +187,7 @@ function PlotList({ entries, allSpecs, variables, onToggle }: PlotListProps) {
           <li
             className="flex items-center gap-2 px-2 h-8 rounded-md hover:bg-surface cursor-context-menu"
           >
+            {/* eslint-disable-next-line no-restricted-syntax -- 16×16 visibility checkbox affordance inside a plot list row */}
             <button
               type="button"
               aria-label={e.enabled ? 'Hide plot' : 'Show plot'}

@@ -31,6 +31,7 @@ export function ActivationsMode() {
           {ALL.map((name, i) => {
             void i;
             return (
+            // eslint-disable-next-line no-restricted-syntax -- chip-style toggle picker; ButtonGroup primitive lands in a future refactor
             <button
               key={name}
               type="button"

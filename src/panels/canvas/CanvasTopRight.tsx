@@ -51,6 +51,7 @@ export function CanvasTopRight({ apiRef }: Props) {
         <Icon name="text" /> <span>Text</span>
       </PillButton>
       <Tooltip label="Toggle theme" shortcut="⌘ ⇧ T">
+        {/* eslint-disable-next-line no-restricted-syntax -- bespoke chrome to mirror Excalidraw's top-right pill cluster */}
         <button
           type="button"
           aria-label="Toggle theme"
@@ -73,6 +74,7 @@ function PillButton({
 }: { label: string; onClick(): void; children: React.ReactNode }) {
   return (
     <Tooltip label={label}>
+      {/* eslint-disable-next-line no-restricted-syntax -- bespoke pill chrome matched to Excalidraw's renderTopRightUI slot */}
       <button
         type="button"
         aria-label={label}

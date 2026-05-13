@@ -136,6 +136,7 @@ function Tree({ node, depth }: { node: unknown; depth: number }) {
     const rest = node.slice(1);
     return (
       <div className={cx(depth > 0 && 'ml-3 border-l border-border-soft pl-2')}>
+        {/* eslint-disable-next-line no-restricted-syntax -- inline disclosure inside a tree row; styled to flow with siblings, not a panel button */}
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}

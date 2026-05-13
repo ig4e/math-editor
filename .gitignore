@@ -26,3 +26,4 @@ dev-dist
 
 # logs
 *.log
+.git-commit-msg
