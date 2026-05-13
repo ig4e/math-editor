@@ -38,13 +38,17 @@ export interface SolveResult {
 const FAIL = (msg: string): SolveResult => ({ latex: '', note: msg, ok: false });
 
 // ---------- parsing helpers -----------------------------------------
+// Note: we deliberately do NOT gate on `expr.isValid` here. Compute-engine
+// marks many usable expressions as "invalid" (e.g. anything containing \pm)
+// even though .simplify() / .solve() still work fine. Let the downstream
+// operations decide whether the expression is salvageable.
 function parse(latex: string): BoxedExpression | null {
   if (!latex || !latex.trim()) return null;
   try {
     const expr = ce.parse(latex);
-    if (!expr || expr.isValid === false) return null;
-    return expr;
-  } catch {
+    return expr ?? null;
+  } catch (e) {
+    console.warn('[solver] parse failed', { latex, error: e });
     return null;
   }
 }
@@ -81,10 +85,17 @@ export interface Definition {
   numeric: number | null; // null if the RHS isn't a plain number
 }
 
+// Tracks the names we (this module) have assigned in the engine, so we can
+// forget exactly those between solves rather than nuking all user definitions.
+const ownAssignments = new Set<string>();
+
 export function ingestDefinitions(blocks: Block[]): Definition[] {
-  // Reset any previous bindings so old, deleted blocks don't linger.
-  // Compute-engine's `forget()` clears user assignments.
-  try { (ce as any).forget?.(); } catch { /* ignore */ }
+  // Drop our previous assignments — deleted definition blocks should stop
+  // affecting the engine.
+  for (const name of ownAssignments) {
+    try { (ce as any).forget?.(name); } catch { /* ignore */ }
+  }
+  ownAssignments.clear();
 
   const defs: Definition[] = [];
   for (const b of blocks) {
@@ -95,8 +106,11 @@ export function ingestDefinitions(blocks: Block[]): Definition[] {
       const rhs = parse(d.latex);
       if (!rhs) continue;
       (ce as any).assign?.(d.name, rhs);
+      ownAssignments.add(d.name);
       defs.push(d);
-    } catch { /* ignore — partial defs still useful */ }
+    } catch (e) {
+      console.warn('[solver] could not bind variable', d.name, e);
+    }
   }
   return defs;
 }

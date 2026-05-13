@@ -18,13 +18,17 @@ export function MarksLayer() {
   const tool        = useStore((s) => s.tool);
   const { zoom } = view;
 
-  // perfect-freehand expects an array of {x,y,pressure?} or [x,y,p?] points
-  // and returns the *outline* of the stroke as a polygon — we render that
-  // as a filled SVG path. Looks the same as a regular stroked line but
-  // tapers naturally at the ends.
+  // perfect-freehand expects screen-pixel points and returns an outline
+  // in the same coordinate space. We pre-multiply the stored world points
+  // by `zoom` so the rendered position matches `worldX * zoom + panX` —
+  // the inverse of screenToWorld. Without this, strokes drift away from
+  // the cursor whenever zoom != 1.
   const strokePaths = useMemo(
     () => strokes.map((s) => {
-      const outline = getStroke(s.points, {
+      const scaled = s.points.map(
+        ([x, y]) => [x * zoom, y * zoom] as [number, number],
+      );
+      const outline = getStroke(scaled, {
         size: s.width * 2 * zoom,
         thinning: 0.55,
         smoothing: 0.5,

@@ -9,6 +9,7 @@ import { Toaster }         from './components/Toaster';
 import { Whiteboard }      from './components/Whiteboard';
 import { SelectionHint }   from './components/SelectionHint';
 import { VariablesPanel }  from './components/VariablesPanel';
+import { ConfirmDialog }   from './components/ConfirmDialog';
 import { IconSprite }      from './components/Icons';
 
 import { useStore } from './state/store';
@@ -133,6 +134,7 @@ export default function App() {
         <VariablesPanel />
       </main>
       <Toaster />
+      <ConfirmDialog />
       <input
         ref={fileInputRef}
         type="file"

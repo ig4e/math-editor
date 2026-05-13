@@ -97,8 +97,12 @@ export const createSheetsSlice: AppSlice<SheetsSlice> = (set) => ({
     const sh = s.sheets[s.activeSheetId];
     sh.blocks = [];
     sh.strokes = [];
+    sh.shapes = [];
+    sh.links = [];
     sh.view = { panX: 0, panY: 0, zoom: 1 };
     s.selectedIds = [];
+    s.activeMathBlockId = null;
+    s.linkPendingFrom = null;
   }),
 
   replaceFromJSON: (data) => set((s) => {

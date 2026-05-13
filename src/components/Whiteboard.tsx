@@ -49,7 +49,6 @@ export function Whiteboard({ onEvaluateRequest, viewportRef }: Props) {
           transform: `translate3d(${sheet.view.panX}px, ${sheet.view.panY}px, 0)`,
         }}
       >
-        <MarksLayer />
         <div className="absolute left-0 top-0">
           {sheet.blocks.map((b) => (
             <Block
@@ -62,6 +61,10 @@ export function Whiteboard({ onEvaluateRequest, viewportRef }: Props) {
             />
           ))}
         </div>
+        {/* Marks render ON TOP of blocks so the user can annotate over
+            equations. The marks layer is pointer-events:none so it never
+            blocks interaction with the blocks underneath. */}
+        <MarksLayer />
       </div>
 
       {/* Capture layer for pen + eraser. Sitting above blocks (z-5) means
