@@ -23,6 +23,7 @@ import { ConfirmDialog }   from './components/ConfirmDialog';
 import { IconSprite }      from './components/Icons';
 import { TooltipProvider } from './components/common';
 import { Tour }            from './onboarding/Tour';
+import { TemplatePicker }  from './panels/canvas/TemplatePicker';
 import { seedWelcomeIfFresh } from './onboarding/welcome';
 
 import { useStore } from './state/store';
@@ -78,6 +79,7 @@ export default function App() {
       <Toaster />
       <ConfirmDialog />
       <Tour />
+      <TemplatePicker />
     </TooltipProvider>
   );
 }
