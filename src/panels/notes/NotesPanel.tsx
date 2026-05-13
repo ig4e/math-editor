@@ -1,13 +1,16 @@
-// Markdown notes per sheet. Left: edit. Right: rendered HTML via `marked`
-// (sanitised by browser defaults — we don't allow inline scripts because
-// marked's default `mangle` and `breaks` configs strip them).
+// Markdown notes per sheet. Edit pane on the left, rendered preview on
+// the right. The preview walks `marked`'s lexer output so we can swap
+// in a real React tree for ```python``` fenced blocks — those render
+// with a Run button that bridges to the Pyodide kernel via
+// PyodideCodeBlock.
 
 import { useEffect, useMemo, useState } from 'react';
-import { marked } from 'marked';
+import { marked, type Tokens } from 'marked';
 import { useStore } from '../../state/store';
 import { useActiveSheet } from '../../state/selectors';
 import { PanelHeader, PanelStatus, IconButton } from '../../components/common';
 import { cx } from '../../utils/cx';
+import { PyodideCodeBlock } from './PyodideCodeBlock';
 
 export default function NotesPanel() {
   const sheet = useActiveSheet();
@@ -28,11 +31,33 @@ export default function NotesPanel() {
     return () => window.clearTimeout(handle);
   }, [draft, sheet, setNotes]);
 
+  // Walk the lexer output. Contiguous non-python runs render as one
+  // dangerouslySetInnerHTML block (keeps semantics identical to the
+  // pre-walker version for the 99% case); ```python``` blocks become
+  // a <PyodideCodeBlock> React subtree.
   const rendered = useMemo(() => {
     try {
-      return marked.parse(draft, { async: false }) as string;
+      const tokens = marked.lexer(draft);
+      const parts: { kind: 'html' | 'python'; payload: string }[] = [];
+      let buf: Tokens.Generic[] = [];
+      const flush = () => {
+        if (buf.length === 0) return;
+        const html = marked.parser(buf as never) as string;
+        parts.push({ kind: 'html', payload: html });
+        buf = [];
+      };
+      for (const t of tokens) {
+        if (t.type === 'code' && (t as Tokens.Code).lang === 'python') {
+          flush();
+          parts.push({ kind: 'python', payload: (t as Tokens.Code).text });
+        } else {
+          buf.push(t as Tokens.Generic);
+        }
+      }
+      flush();
+      return parts;
     } catch (e) {
-      return `<pre style="color:#dc2626">${(e as Error).message}</pre>`;
+      return [{ kind: 'html' as const, payload: `<pre style="color:#dc2626">${(e as Error).message}</pre>` }];
     }
   }, [draft]);
 
@@ -54,7 +79,7 @@ export default function NotesPanel() {
           <textarea
             value={draft}
             onChange={(e) => setDraft(e.currentTarget.value)}
-            placeholder={`# Notes for this sheet\nUse **markdown** — \`code\`, lists, headings, etc.`}
+            placeholder={`# Notes for this sheet\nUse **markdown** — \`code\`, lists, headings, etc.\n\n\`\`\`python\nprint(1 + 1)\n\`\`\``}
             className={cx(
               'flex-1 p-3 outline-none resize-none bg-surface-2 font-mono text-[13px] text-fg',
               'placeholder:text-fg-faint',
@@ -74,8 +99,13 @@ export default function NotesPanel() {
               '[&_p]:my-2 [&_ul]:my-2 [&_ol]:my-2 [&_ul]:list-disc [&_ol]:list-decimal [&_ul]:pl-5 [&_ol]:pl-5',
               '[&_a]:text-accent [&_a]:underline',
             )}
-            dangerouslySetInnerHTML={{ __html: rendered }}
-          />
+          >
+            {rendered.map((p, i) =>
+              p.kind === 'python'
+                ? <PyodideCodeBlock key={i} code={p.payload} />
+                : <div key={i} dangerouslySetInnerHTML={{ __html: p.payload }} />,
+            )}
+          </div>
         )}
       </div>
       <PanelStatus>
