@@ -7,7 +7,7 @@
 | P2a | Delete legacy drawing layer; enable `noUncheckedIndexedAccess` | ✅ committed | `dcf5d50` — 40 files removed, 2828 lines deleted |
 | P2b | Wire Excalidraw into Canvas panel with native UI | ✅ committed | `cb89787` — CanvasMainMenu/TopRight/Footer/Welcome around `<Excalidraw>` |
 | P2c | MathOverlay + anchor sync + injection API | ✅ committed | `5c06bd2` — MathBlock/TextBlock/anchors/inject |
-| P2d | Selective vendor of `excalidraw-app` | ⏭️ deferred | Incremental: P8 vendors ShareDialog, P11 vendors encryption.ts, etc. |
+| P2d | Selective vendor of `excalidraw-app` | ✅ committed | `e28ca4b` — `encryption.ts` + `share-link.ts` vendored with attribution; NOTICE file at repo root |
 
 ## Verification gate
 

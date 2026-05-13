@@ -18,7 +18,7 @@ Phase 2's Excalidraw integration was expanded from "use the NPM library" to also
 | P1b | Three registries: Panel + Command + Keybind | ✅ committed | `7703065` |
 | P1c | Design-system primitives in `components/common/` | ✅ committed | `c5c4287` |
 | P1d | Workspace shell + Settings panel + 12 panel stubs + App.tsx swap | ✅ committed | `390f346` |
-| P1e | Foundation contract tests (deferred to a follow-up) | ⏭️ deferred | The contracts are exercised by the running app; explicit Vitest coverage lands after P2/P3 where the panels they test become real. |
+| P1e | Foundation contract tests | ✅ committed | `e28ca4b` — Vitest + jsdom + fake-indexeddb; 20 tests across 5 files |
 
 ## Phase 1 verification gates (from `verification.md`)
 
