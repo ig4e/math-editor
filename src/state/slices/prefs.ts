@@ -1,0 +1,102 @@
+// Prefs slice — user-tunable everything: appearance, curriculum, defaults.
+// Mirrors a small set of fields the legacy `uiSlice` also stores (theme,
+// showSteps). Both stay live during P1 so the old App.tsx still boots;
+// Phase 2 deletes the legacy duplicates.
+
+import type { AppSlice } from '../store';
+import type { Curriculum, Theme } from '../types';
+
+export interface PrefsState {
+  theme: Theme;
+  /** Auto-follow system theme (overrides `theme`). */
+  themeAuto: boolean;
+
+  /** Multiplier on the base 14 px size. 1.0 = default. */
+  fontScale: number;
+
+  curriculum: Curriculum;
+  /** Free-form name when curriculum === 'custom'. */
+  curriculumCustom: string;
+
+  /** Show step-by-step rewrites by default. */
+  showSteps: boolean;
+
+  /** Default AI provider + model picked in Settings. */
+  defaultProvider: string | null;
+  defaultModel: string | null;
+
+  /** "Don't show install banner again". */
+  installBannerDismissed: boolean;
+
+  /** "Don't show first-run onboarding again". */
+  onboardingDismissed: boolean;
+}
+
+export interface PrefsActions {
+  setTheme(t: Theme): void;
+  setThemeAuto(v: boolean): void;
+  setFontScale(n: number): void;
+  setCurriculum(c: Curriculum, custom?: string): void;
+  setShowSteps(v: boolean): void;
+  setDefaultProvider(provider: string | null, model: string | null): void;
+  dismissInstallBanner(): void;
+  dismissOnboarding(): void;
+}
+
+export type PrefsSlice = PrefsState & PrefsActions;
+
+export const createPrefsSlice: AppSlice<PrefsSlice> = (set) => ({
+  theme: 'light',
+  themeAuto: true,
+  fontScale: 1,
+  curriculum: 'none',
+  curriculumCustom: '',
+  showSteps: true,
+  defaultProvider: null,
+  defaultModel: null,
+  installBannerDismissed: false,
+  onboardingDismissed: false,
+
+  setTheme: (t) =>
+    set((s) => {
+      s.theme = t;
+      s.themeAuto = false;
+    }),
+
+  setThemeAuto: (v) =>
+    set((s) => {
+      s.themeAuto = v;
+    }),
+
+  setFontScale: (n) =>
+    set((s) => {
+      s.fontScale = Math.max(0.75, Math.min(1.5, n));
+    }),
+
+  setCurriculum: (c, custom = '') =>
+    set((s) => {
+      s.curriculum = c;
+      if (c === 'custom') s.curriculumCustom = custom;
+    }),
+
+  setShowSteps: (v) =>
+    set((s) => {
+      s.showSteps = v;
+    }),
+
+  setDefaultProvider: (provider, model) =>
+    set((s) => {
+      s.defaultProvider = provider;
+      s.defaultModel = model;
+    }),
+
+  dismissInstallBanner: () =>
+    set((s) => {
+      s.installBannerDismissed = true;
+    }),
+
+  dismissOnboarding: () =>
+    set((s) => {
+      s.onboardingDismissed = true;
+    }),
+});

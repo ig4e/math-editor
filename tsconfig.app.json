@@ -10,6 +10,10 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
+    // TODO Phase 2: turn this on once the legacy strokes/shapes/recognizer
+    // files are deleted. They predate the rule and would only require
+    // throwaway `!`-assertions to satisfy it.
+    "noUncheckedIndexedAccess": false,
     "skipLibCheck": true,
     "isolatedModules": true,
     "esModuleInterop": true,

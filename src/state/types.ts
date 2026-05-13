@@ -1,3 +1,10 @@
+// Domain types. The v2 transformation keeps math + text blocks and sheets,
+// and adds workspace layout, encrypted-keys, prefs. The strokes / shapes /
+// links types below are LEGACY — still present so the old code keeps
+// building during P1; Phase 2 deletes them when Excalidraw takes over.
+
+// Legacy: pen / eraser / link tools go away in P2; selection is implicit
+// in the new world. Keep the union for the old toolbar to compile.
 export type Tool = 'move' | 'pen' | 'eraser' | 'link';
 
 export type ColorName =
@@ -24,9 +31,8 @@ export interface TextBlock extends BaseBlock {
 
 export type Block = MathBlock | TextBlock;
 
-// ---------- Marks (drawn on the whiteboard) ----------------------------
+// ---------- Marks (LEGACY — Phase 2 deletes) ---------------------------
 
-/** Freehand pen stroke — a sequence of world-coord points. */
 export interface Stroke {
   id: string;
   color: string;
@@ -34,7 +40,6 @@ export interface Stroke {
   points: [number, number][];
 }
 
-/** Parametric shapes produced by the auto-shape recognizer. */
 export interface ShapeBase {
   id: string;
   color: string;
@@ -48,7 +53,6 @@ export interface TriangleShape extends ShapeBase { kind: 'triangle'; points: [nu
 
 export type Shape = CircleShape | RectShape | LineShape | ArrowShape | TriangleShape;
 
-/** Visible equation link between two blocks; solving any one solves the group. */
 export interface Link {
   id: string;
   fromId: string;
@@ -67,6 +71,7 @@ export interface Sheet {
   id: string;
   name: string;
   blocks: Block[];
+  // Legacy fields kept for the existing slices; Phase 2 drops them.
   strokes: Stroke[];
   shapes: Shape[];
   links: Link[];
@@ -82,3 +87,30 @@ export interface Toast {
 }
 
 export type Theme = 'light' | 'dark';
+
+// ---------- v2 additions: workspace, prefs, keys -----------------------
+
+/** Curriculum the user picked in Settings. Drives AI prompt + Reference filter. */
+export type Curriculum =
+  | 'none'
+  | 'ap-calc-ab' | 'ap-calc-bc'
+  | 'ib-math-sl' | 'ib-math-hl'
+  | 'a-level-further' | 'us-common-core-hs'
+  | 'gre' | 'custom';
+
+/** Workspace layout JSON, opaque to the rest of the store — flexlayout owns it. */
+export type LayoutJSON = unknown;
+
+/** Encrypted blob plus its WebCrypto IV. The key derives from a salt in IDB. */
+export interface EncryptedKey {
+  iv: string;       // base64
+  ciphertext: string;
+}
+
+/** One provider's BYOK record. */
+export interface ProviderKey {
+  providerId: string;        // 'anthropic', 'openai', 'openai-compat:<label>', …
+  model?: string;            // default model the user picked
+  baseURL?: string;          // only for openai-compat
+  key: EncryptedKey;
+}

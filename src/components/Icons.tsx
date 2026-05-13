@@ -7,7 +7,13 @@ export type IconName =
   | 'download' | 'folder' | 'image' | 'trash' | 'note'
   | 'copy' | 'close' | 'sun' | 'moon' | 'check' | 'warn'
   | 'info' | 'x-square' | 'resize' | 'help'
-  | 'wand' | 'link' | 'steps';
+  | 'wand' | 'link' | 'steps'
+  // v2 additions
+  | 'settings' | 'keyboard' | 'layout' | 'palette' | 'sparkles'
+  | 'search' | 'menu' | 'expand' | 'chevron-down' | 'chevron-up'
+  | 'chevron-left' | 'chevron-right' | 'graph' | 'cube' | 'brain'
+  | 'matrix' | 'function' | 'book' | 'tag' | 'code' | 'circle'
+  | 'square' | 'play' | 'pause' | 'stop' | 'refresh';
 
 export function IconSprite() {
   return (
@@ -42,6 +48,32 @@ export function IconSprite() {
         <symbol id="i-wand" viewBox="0 0 24 24"><path d="M4 20 L13 11 M14 5l1 2 2 1-2 1-1 2-1-2-2-1 2-1z M19 13l.6 1.4 1.4.6-1.4.6L19 17l-.6-1.4L17 15l1.4-.6z"/></symbol>
         <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1.5 1.5 M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1.5-1.5"/></symbol>
         <symbol id="i-steps" viewBox="0 0 24 24"><path d="M4 18h4v-4H4zM10 14h4v-4h-4zM16 10h4V6h-4z"/></symbol>
+        <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+        <symbol id="i-keyboard" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M6 14h12"/></symbol>
+        <symbol id="i-layout" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></symbol>
+        <symbol id="i-palette" viewBox="0 0 24 24"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2a10 10 0 1 0 0 20c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1-.23-.27-.38-.62-.38-1 0-.83.67-1.5 1.5-1.5h1.77c2.76 0 5-2.24 5-5C21 6.48 16.97 2 12 2z"/></symbol>
+        <symbol id="i-sparkles" viewBox="0 0 24 24"><path d="M12 3l1.5 4 4 1.5-4 1.5L12 14l-1.5-4-4-1.5 4-1.5L12 3z"/><path d="M19 14l.8 2 2 .8-2 .8L19 19.6l-.8-2-2-.8 2-.8z"/><path d="M5 16l.6 1.4 1.4.6-1.4.6L5 20l-.6-1.4L3 18l1.4-.6z"/></symbol>
+        <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></symbol>
+        <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+        <symbol id="i-expand" viewBox="0 0 24 24"><path d="M15 3h6v6M21 3l-7 7M9 21H3v-6M3 21l7-7"/></symbol>
+        <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+        <symbol id="i-chevron-up" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></symbol>
+        <symbol id="i-chevron-left" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
+        <symbol id="i-chevron-right" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+        <symbol id="i-graph" viewBox="0 0 24 24"><path d="M3 21V3M3 21h18M6 17c2-4 4-6 6-6s4 4 6 6"/></symbol>
+        <symbol id="i-cube" viewBox="0 0 24 24"><path d="M12 2L4 7v10l8 5 8-5V7l-8-5z"/><path d="M4 7l8 5 8-5M12 12v10"/></symbol>
+        <symbol id="i-brain" viewBox="0 0 24 24"><path d="M9 3a3 3 0 0 0-3 3v.5A3 3 0 0 0 3 9.5v3a3 3 0 0 0 1.5 2.6V18a3 3 0 0 0 3 3h0M15 3a3 3 0 0 1 3 3v.5a3 3 0 0 1 3 3v3a3 3 0 0 1-1.5 2.6V18a3 3 0 0 1-3 3h0M12 3v18M9 9h6M9 15h6"/></symbol>
+        <symbol id="i-matrix" viewBox="0 0 24 24"><path d="M4 3v18M20 3v18M4 3h2M4 21h2M18 3h2M18 21h2"/><path d="M8 8h2M14 8h2M8 12h2M14 12h2M8 16h2M14 16h2"/></symbol>
+        <symbol id="i-function" viewBox="0 0 24 24"><path d="M8 21V8a4 4 0 0 1 4-4M5 12h6M14 8l5 10M19 8l-5 10"/></symbol>
+        <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5v14a2 2 0 0 0 2 2h14V4H6a2 2 0 0 0-2 2z"/><path d="M8 6v15"/></symbol>
+        <symbol id="i-tag" viewBox="0 0 24 24"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/></symbol>
+        <symbol id="i-code" viewBox="0 0 24 24"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5M14 4l-4 16"/></symbol>
+        <symbol id="i-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/></symbol>
+        <symbol id="i-square" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/></symbol>
+        <symbol id="i-play" viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z"/></symbol>
+        <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></symbol>
+        <symbol id="i-stop" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="1"/></symbol>
+        <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 15.5-6.3L21 8M21 4v4h-4M21 12a9 9 0 0 1-15.5 6.3L3 16M3 20v-4h4"/></symbol>
       </defs>
     </svg>
   );
