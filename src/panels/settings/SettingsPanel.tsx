@@ -8,6 +8,7 @@ import type { TabItem } from '../../components/common';
 import { AppearanceSection } from './AppearanceSection';
 import { KeybindsSection } from './KeybindsSection';
 import { LayoutSection } from './LayoutSection';
+import { APIKeysSection } from './APIKeysSection';
 
 const ITEMS: readonly TabItem[] = [
   {
@@ -28,15 +29,7 @@ const ITEMS: readonly TabItem[] = [
   {
     value: 'api-keys',
     label: 'API keys',
-    content: (
-      <Section title="API keys (BYOK)">
-        <EmptyState
-          icon="sparkles"
-          title="Coming in Phase 6"
-          description="Bring your own API key for Anthropic / OpenAI / Google / xAI / Mistral / Groq, plus an OpenAI-compatible adapter for DeepSeek / Qwen / Moonshot."
-        />
-      </Section>
-    ),
+    content: <Section title="API keys (BYOK)"><APIKeysSection /></Section>,
   },
   {
     value: 'curriculum',
