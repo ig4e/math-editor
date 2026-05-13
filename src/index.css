@@ -45,6 +45,8 @@
   --shadow-toast: 0 8px 28px rgba(0, 0, 0, 0.12);
 
   --animate-toast-in: toast-in 0.18s ease-out;
+  --animate-slide-in-right: slide-in-right 0.18s ease-out;
+  --animate-slide-in-left: slide-in-left 0.18s ease-out;
 
   @keyframes toast-in {
     from {
@@ -55,6 +57,14 @@
       opacity: 1;
       transform: none;
     }
+  }
+  @keyframes slide-in-right {
+    from { transform: translateX(100%); }
+    to   { transform: translateX(0); }
+  }
+  @keyframes slide-in-left {
+    from { transform: translateX(-100%); }
+    to   { transform: translateX(0); }
   }
 }
 
