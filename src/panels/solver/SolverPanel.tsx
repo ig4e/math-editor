@@ -16,6 +16,7 @@ import { Icon } from '../../components/Icons';
 
 import '../../solvers/all';
 import { ReadOnlyMathField } from './ReadOnlyMathField';
+import { injectBoundArrow, findInsertionPointBelowAnchors } from '../canvas/inject';
 
 type Action = 'simplify' | 'solve' | 'system';
 
@@ -27,6 +28,28 @@ export default function SolverPanel() {
 
   const [result, setResult] = useState<SolverResult | null>(null);
   const [busy, setBusy] = useState(false);
+  const addMathBlock = useStore((s) => s.addMathBlock);
+
+  /** Pin the current result onto the canvas as a fresh math block, with
+   *  arrows from each source block. Wired to the "Pin to canvas" CTA. */
+  const pinResult = useCallback(() => {
+    if (!result?.ok || !result.latex) return;
+    const sourceIds = selected.map((b) => b.id);
+    const at = findInsertionPointBelowAnchors(sourceIds) ?? { x: 200, y: 200 };
+    const resultId = addMathBlock({ x: at.x, y: at.y, latex: result.latex });
+    // Wait one tick so the new block's anchor lands on the canvas first,
+    // then draw arrows. Anchor sync also runs on its own effect cycle.
+    requestAnimationFrame(() => {
+      for (const srcId of sourceIds) {
+        injectBoundArrow({
+          fromAnchorId: srcId,
+          toAnchorId: resultId,
+          color: '#6366f1',
+        });
+      }
+    });
+    toast('Pinned result to canvas', 'success');
+  }, [result, selected, addMathBlock, toast]);
 
   // Detected vars become substitutions for the active solve.
   const variables = useMemo(() => {
@@ -137,7 +160,15 @@ export default function SolverPanel() {
           </Card>
         )}
         {result?.ok && result.latex && (
-          <Card title="Result" tone="accent">
+          <Card
+            title="Result"
+            tone="accent"
+            titleActions={
+              <Button size="sm" variant="ghost" onClick={pinResult}>
+                <Icon name="plus" /> Pin to canvas
+              </Button>
+            }
+          >
             <ReadOnlyMathField latex={result.latex} />
             {result.backend && (
               <div className="mt-1 text-[10px] text-fg-muted">via {result.backend}</div>

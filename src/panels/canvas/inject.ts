@@ -1,14 +1,11 @@
 // inject.ts — programmatic API for other panels to push elements onto
 // the Excalidraw canvas. Wraps `convertToExcalidrawElements` so each
 // call is one undo step (Excalidraw's Ctrl+Z reverts our injections).
-//
-// Phase 2 ships the skeleton with the most-used calls. Later phases
-// (P3 Solver arrows, P4/5 Graph pin-to-canvas, P15 ML descent paths)
-// add specialised helpers built on these primitives.
 
 import { convertToExcalidrawElements } from '@excalidraw/excalidraw';
 import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
 import type { ExcalidrawElement } from '@excalidraw/excalidraw/element/types';
+import { isAnchor } from './anchors';
 
 let apiRef: ExcalidrawImperativeAPI | null = null;
 
@@ -21,35 +18,81 @@ export function getExcalidrawAPI(): ExcalidrawImperativeAPI | null {
   return apiRef;
 }
 
+/** Element ID convention for block anchors, mirrored in anchors.ts. */
+export const anchorElementId = (blockId: string) => `anchor:${blockId}`;
+
 interface InjectArrowOpts {
-  from: { x: number; y: number } | string; // string = anchor blockId
-  to:   { x: number; y: number } | string;
+  from: { x: number; y: number };
+  to: { x: number; y: number };
   label?: string;
   color?: string;
   dashed?: boolean;
 }
 
-export function injectArrow(_opts: InjectArrowOpts): void {
-  // Phase 3 builds out the bound-arrow flow; for now this just lays
-  // down a free arrow if both ends are coordinates.
-  const api = apiRef;
-  if (!api) return;
-  // Free-positioned arrow only (anchor binding lands in P3 with full
-  // anchor → boundElement wiring). String IDs are no-oped here.
-  if (typeof _opts.from === 'string' || typeof _opts.to === 'string') return;
-
-  const skeleton = convertToExcalidrawElements([
+/** Draw a free-positioned arrow between two scene coords. */
+export function injectArrow(opts: InjectArrowOpts): void {
+  if (!apiRef) return;
+  const elements = convertToExcalidrawElements([
     {
       type: 'arrow',
-      x: _opts.from.x,
-      y: _opts.from.y,
-      width: _opts.to.x - _opts.from.x,
-      height: _opts.to.y - _opts.from.y,
-      strokeColor: _opts.color ?? '#6366f1',
-      strokeStyle: _opts.dashed ? 'dashed' : 'solid',
+      x: opts.from.x,
+      y: opts.from.y,
+      width: opts.to.x - opts.from.x,
+      height: opts.to.y - opts.from.y,
+      strokeColor: opts.color ?? '#6366f1',
+      strokeStyle: opts.dashed ? 'dashed' : 'solid',
+      label: opts.label ? { text: opts.label } : undefined,
     },
   ]);
-  pushElements(skeleton);
+  pushElements(elements);
+}
+
+interface InjectBoundArrowOpts {
+  fromAnchorId: string;     // block ID
+  toAnchorId: string;       // block ID
+  label?: string;
+  color?: string;
+  dashed?: boolean;
+}
+
+/**
+ * Draw an arrow whose endpoints are bound to two block anchors. When
+ * either block moves, Excalidraw repositions the arrow automatically.
+ */
+export function injectBoundArrow(opts: InjectBoundArrowOpts): void {
+  const api = apiRef;
+  if (!api) return;
+  const fromId = anchorElementId(opts.fromAnchorId);
+  const toId = anchorElementId(opts.toAnchorId);
+  const elements = api.getSceneElements();
+  const fromEl = elements.find((el) => el.id === fromId);
+  const toEl = elements.find((el) => el.id === toId);
+  if (!fromEl || !toEl) {
+    console.warn('[inject] anchor not found', { fromId, toId });
+    return;
+  }
+  // Start the arrow at fromEl's center; convertToExcalidrawElements +
+  // its `start`/`end` shorthand handles binding.
+  const fromCx = fromEl.x + fromEl.width / 2;
+  const fromCy = fromEl.y + fromEl.height / 2;
+  const toCx = toEl.x + toEl.width / 2;
+  const toCy = toEl.y + toEl.height / 2;
+
+  const built = convertToExcalidrawElements([
+    {
+      type: 'arrow',
+      x: fromCx,
+      y: fromCy,
+      width: toCx - fromCx,
+      height: toCy - fromCy,
+      strokeColor: opts.color ?? '#6366f1',
+      strokeStyle: opts.dashed ? 'dashed' : 'solid',
+      start: { id: fromId },
+      end: { id: toId },
+      label: opts.label ? { text: opts.label } : undefined,
+    },
+  ]);
+  pushElements(built);
 }
 
 interface InjectTextOpts {
@@ -82,21 +125,21 @@ interface InjectImageOpts {
 }
 
 export function injectImage(_opts: InjectImageOpts): void {
-  // Image injection requires registering a file blob first via
-  // `addFiles` and then creating an image element referencing it.
-  // Phase 4 (Graph 2D pin-to-canvas) implements the full flow.
   if (!apiRef) return;
-  // TODO(P4): implement via api.addFiles + image element skeleton.
+  // Image injection requires registering a file blob via addFiles + a
+  // image-element skeleton referencing it. Phase 4 (Graph 2D Pin-to-
+  // canvas) fills this in.
+  console.info('[inject] injectImage not yet implemented');
 }
 
-/** Raw escape hatch — push pre-built Excalidraw elements onto the scene. */
+/** Raw escape hatch — push pre-built Excalidraw elements. */
 export function injectShapes(elements: ExcalidrawElement[]): void {
   pushElements(elements);
 }
 
 // ----- internals -------------------------------------------------------
 
-function pushElements(elements: ExcalidrawElement[]): void {
+function pushElements(elements: readonly ExcalidrawElement[]): void {
   const api = apiRef;
   if (!api) return;
   const existing = api.getSceneElements();
@@ -104,4 +147,21 @@ function pushElements(elements: ExcalidrawElement[]): void {
     elements: [...existing, ...elements],
     captureUpdate: 'capture' as unknown as never,
   });
+}
+
+/** Find the rough bottom-right of the active anchor cluster — used to
+ *  place a new block "near" the current sources. */
+export function findInsertionPointBelowAnchors(anchorBlockIds: readonly string[]): { x: number; y: number } | null {
+  const api = apiRef;
+  if (!api) return null;
+  const wanted = new Set(anchorBlockIds.map(anchorElementId));
+  const elements = api.getSceneElements().filter((el) => wanted.has(el.id) && isAnchor(el));
+  if (elements.length === 0) return null;
+  let minX = Infinity;
+  let maxY = -Infinity;
+  for (const el of elements) {
+    if (el.x < minX) minX = el.x;
+    if (el.y + el.height > maxY) maxY = el.y + el.height;
+  }
+  return { x: minX, y: maxY + 80 };
 }
