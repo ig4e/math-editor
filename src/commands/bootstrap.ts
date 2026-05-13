@@ -231,6 +231,41 @@ const bootstrap: Command[] = [
     },
   },
   {
+    id: 'collab.startSession',
+    label: 'Start collab session',
+    category: 'View',
+    icon: 'link',
+    run: async (ctx) => {
+      const { startCollab, generateRoomId, buildRoomURL } = await import('../collab/session');
+      const roomId = generateRoomId();
+      startCollab({
+        roomId,
+        user: {
+          name: prompt('Your name?') ?? 'Anonymous',
+          color: `hsl(${Math.floor(Math.random() * 360)}, 70%, 55%)`,
+        },
+      });
+      const url = buildRoomURL(roomId);
+      try {
+        await navigator.clipboard.writeText(url);
+        ctx.getState().toast('Room link copied — share it', 'success');
+      } catch {
+        ctx.getState().toast(`Room: ${url}`, 'info');
+      }
+    },
+  },
+  {
+    id: 'collab.endSession',
+    label: 'End collab session',
+    category: 'View',
+    icon: 'close',
+    run: async (ctx) => {
+      const { destroyCollab } = await import('../collab/session');
+      destroyCollab();
+      ctx.getState().toast('Collab session ended', 'info');
+    },
+  },
+  {
     id: 'math.ocrSelection',
     label: 'Convert sketched selection to math',
     category: 'Math',

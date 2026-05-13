@@ -46,6 +46,23 @@ export default function App() {
     void applyShareFromHash();
   }, []);
 
+  // If the URL hash carries a room=<id>, join that collab session.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    void (async () => {
+      const { readRoomFromHash, startCollab } = await import('./collab/session');
+      const roomId = readRoomFromHash();
+      if (!roomId) return;
+      startCollab({
+        roomId,
+        user: {
+          name: prompt(`Joining room ${roomId}. Your name?`) ?? 'Guest',
+          color: `hsl(${Math.floor(Math.random() * 360)}, 70%, 55%)`,
+        },
+      });
+    })();
+  }, []);
+
   return (
     <TooltipProvider delayDuration={350}>
       <IconSprite />

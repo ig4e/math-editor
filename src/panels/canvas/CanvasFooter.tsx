@@ -7,6 +7,7 @@ import { Footer } from '@excalidraw/excalidraw';
 import { useStore } from '../../state/store';
 import { useActiveSheet } from '../../state/selectors';
 import { Kbd } from '../../components/common/Kbd';
+import { CollabStatus } from '../../collab/CollabStatus';
 
 export function CanvasFooter() {
   const sheet = useActiveSheet();
@@ -30,6 +31,7 @@ export function CanvasFooter() {
         <span className="flex items-center gap-1">
           <Kbd combo="$mod+K" /> commands
         </span>
+        <CollabStatus />
       </div>
     </Footer>
   );
