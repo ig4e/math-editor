@@ -34,6 +34,13 @@ export interface PrefsState {
   /** Bigger tap targets for stylus / touch input. Defaults true on
    *  pointer-coarse devices. The user can override either way. */
   tabletMode: boolean;
+
+  /** Route AI chat through /api/ai-proxy instead of calling the
+   *  provider directly from the browser. The proxy holds server keys
+   *  and is the only path for providers that don't support browser
+   *  CORS (Mistral). Off by default; turning it on means the user's
+   *  local provider key isn't used. */
+  useAIProxy: boolean;
 }
 
 export interface PrefsActions {
@@ -46,6 +53,7 @@ export interface PrefsActions {
   dismissInstallBanner(): void;
   dismissOnboarding(): void;
   setTabletMode(v: boolean): void;
+  setUseAIProxy(v: boolean): void;
 }
 
 export type PrefsSlice = PrefsState & PrefsActions;
@@ -62,6 +70,7 @@ export const createPrefsSlice: AppSlice<PrefsSlice> = (set) => ({
   installBannerDismissed: false,
   onboardingDismissed: false,
   tabletMode: typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches,
+  useAIProxy: false,
 
   setTheme: (t) =>
     set((s) => {
@@ -109,5 +118,10 @@ export const createPrefsSlice: AppSlice<PrefsSlice> = (set) => ({
   setTabletMode: (v) =>
     set((s) => {
       s.tabletMode = v;
+    }),
+
+  setUseAIProxy: (v) =>
+    set((s) => {
+      s.useAIProxy = v;
     }),
 });

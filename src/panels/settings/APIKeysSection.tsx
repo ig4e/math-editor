@@ -13,19 +13,36 @@ import {
 } from '../../ai/providers';
 import { saveProviderKey, removeProviderKey, hasProviderKey } from '../../ai/byok';
 import {
-  Card, Button, Input, Select, Field, Banner, Spinner,
+  Card, Button, Input, Select, Field, Banner, Spinner, Switch,
 } from '../../components/common';
 import { Icon } from '../../components/Icons';
 import '../../ai/providers/index';
 
 export function APIKeysSection() {
   const providers = getAllProviders();
+  const useAIProxy = useStore((s) => s.useAIProxy);
+  const setUseAIProxy = useStore((s) => s.setUseAIProxy);
+
   return (
     <div className="flex flex-col gap-4 max-w-2xl">
       <Banner kind="info" title="Local-only, encrypted at rest">
         Keys live in your browser's IndexedDB, encrypted with a per-install AES-GCM key.
         Nothing leaves this device unless you initiate an AI call. See <a href="/docs/ai-byok.md" className="underline">docs/ai-byok.md</a>.
       </Banner>
+
+      <Card title="Server-side proxy" tone="neutral">
+        <Field label="Use /api/ai-proxy" inline rightSlot={
+          <Switch checked={useAIProxy} onCheckedChange={setUseAIProxy} ariaLabel="Use AI proxy" />
+        }>
+          {() => (
+            <div className="text-xs text-fg-muted">
+              When on, AI calls route through the deployment's server-side proxy and use keys
+              held on the server. Required for Mistral (no browser CORS). Off by default.
+              See <a href="/docs/ai-byok.md" className="underline">docs/ai-byok.md</a>.
+            </div>
+          )}
+        </Field>
+      </Card>
 
       {providers
         .filter((p) => p.info.id !== 'openai-compat')

@@ -32,6 +32,17 @@ export async function startChat(req: ChatRequest, signal: AbortSignal): Promise<
   const provider = getProvider(req.providerId);
   if (!provider) throw new Error(`Unknown provider: ${req.providerId}`);
 
+  // Route through the server-side proxy if either:
+  //   - the provider can't be called from the browser (CORS), or
+  //   - the user opted in via prefs.useAIProxy
+  // The proxy uses keys held on the server, so we never load a local
+  // key in that path.
+  const wantProxy = !provider.info.supportsBrowser || useStore.getState().useAIProxy;
+  if (wantProxy) {
+    const { startChatViaProxy } = await import('./proxyStream');
+    return startChatViaProxy(req, signal);
+  }
+
   const apiKey = await loadProviderKey(req.providerId);
   if (!apiKey) throw new Error('No API key stored for this provider — add one in Settings.');
 
