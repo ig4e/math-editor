@@ -41,6 +41,8 @@ export interface Sheet {
    *  populates this. Stored as opaque JSON; restoreElements/restoreAppState
    *  hydrate it on load. */
   excalidrawSnapshot?: unknown;
+  /** Markdown notes the user pinned to this sheet (P7 NotesPanel). */
+  notes?: string;
   view: View;
 }
 

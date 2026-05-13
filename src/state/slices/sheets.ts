@@ -25,6 +25,9 @@ export interface SheetsSlice {
   // per-sheet Excalidraw scene snapshot (Phase 2 writes via canvasPanel)
   setSheetSnapshot: (id: string, snapshot: unknown) => void;
 
+  // per-sheet markdown notes (Phase 7 writes via NotesPanel)
+  setSheetNotes: (id: string, notes: string) => void;
+
   // bulk
   clearActiveSheet: () => void;
   replaceFromJSON: (data: unknown) => void;
@@ -100,6 +103,11 @@ export const createSheetsSlice: AppSlice<SheetsSlice> = (set) => ({
   setSheetSnapshot: (id, snapshot) => set((s) => {
     const sh = s.sheets[id];
     if (sh) sh.excalidrawSnapshot = snapshot;
+  }),
+
+  setSheetNotes: (id, notes) => set((s) => {
+    const sh = s.sheets[id];
+    if (sh) sh.notes = notes;
   }),
 
   // -------- bulk --------

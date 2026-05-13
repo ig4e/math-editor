@@ -40,6 +40,7 @@
     "idb-keyval": "^6.2.2",
     "immer": "^10.1.1",
     "jsxgraph": "^1.12.2",
+    "marked": "^18.0.3",
     "mathlive": "^0.105.0",
     "mathsteps": "^0.2.0",
     "nanoid": "^5.1.11",
