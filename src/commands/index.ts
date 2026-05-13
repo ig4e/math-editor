@@ -3,6 +3,7 @@
 
 import { registerBootstrapCommands } from './bootstrap';
 import { registerTemplateCommands } from './templates';
+import { registerPracticeCommands } from './practice';
 
 // Bootstrap depends on the panel registry being populated so its
 // dynamic "Open <Panel>" commands can mirror it. Panels register via
@@ -10,3 +11,4 @@ import { registerTemplateCommands } from './templates';
 // panels first. main.tsx does so by importing './panels' before this.
 registerBootstrapCommands();
 registerTemplateCommands();
+registerPracticeCommands();
