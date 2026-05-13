@@ -64,6 +64,26 @@ Keys live **only in this browser**. Specifically:
 
 For deployments that want stronger guarantees (e.g. shared kiosks, classroom installs), the Cloudflare / Vercel deploy includes an optional **server-side proxy** mode: keys live in the platform's secret store, and the browser calls `/api/ai-proxy` instead of the provider directly. See deploy docs.
 
+### Server-side proxy mode
+
+`api/ai-proxy.ts` is a dual-export edge function (Cloudflare + Vercel from one source). It only responds when **explicitly enabled** via env vars on the deployment:
+
+| Env var | Required | What it does |
+|---|---|---|
+| `ENABLE_AI_PROXY=1` | yes | Turns the route on. Without it, every POST returns 503 — fail-closed. |
+| `AI_PROXY_ALLOWED_ORIGINS` | yes | Comma-separated list of origins (exact match). Any other `Origin` gets a 403. Never use a wildcard. |
+| `ANTHROPIC_API_KEY` | one of these | Key looked up by `providerId` from the POST body. Set whichever providers you want to expose. |
+| `OPENAI_API_KEY` | …                | |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | …      | |
+| `XAI_API_KEY` | …                       | |
+| `MISTRAL_API_KEY` | …                   | Required for Mistral — there is no browser-direct path (CORS-blocked). |
+| `GROQ_API_KEY` | …                      | |
+| `OPENAI_COMPAT_API_KEY` | …             | Pair with `OPENAI_COMPAT_BASE_URL` for DeepSeek / Qwen / etc. |
+
+The browser opts in via **Settings → API keys → "Use server-side proxy"**. Even with that toggle off, the proxy is the **only** path for Mistral because the provider's `info.supportsBrowser` is `false` in our registry. The proxy strips tool calls in v1 — only text streams flow through.
+
+Note for builders: the proxy reuses the AI SDK v6 `streamText().toTextStreamResponse()` helper. Each provider's SDK is dynamic-imported per request so the function's cold-start only pays for the chosen provider.
+
 ## What features need a key?
 
 | Feature | Provider type required |

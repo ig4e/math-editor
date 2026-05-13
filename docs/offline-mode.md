@@ -6,7 +6,7 @@ Math Notebook is built **PWA-first**. After the first load you can fly the wifi 
 
 | Feature | Notes |
 |---|---|
-| All math editing & rendering | MathLive fonts are bundled into the app (not loaded from a CDN). |
+| All math editing & rendering | MathLive's KaTeX-family woff2 fonts are copied into `dist/fonts/` by an inline Vite plugin and precached by the service worker (`vite.config.ts` + `src/main.tsx` sets `MathfieldElement.fontsDirectory = '/fonts'`). No CDN dependency at runtime. |
 | Solve / Simplify / system solve via compute-engine | local CAS — no network. |
 | Step-by-step via mathsteps | lazy-loads on first use, then cached. |
 | 2D graphing (JSXGraph) | lazy chunk, then cached. |

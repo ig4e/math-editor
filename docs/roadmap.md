@@ -1,6 +1,8 @@
 # Roadmap — Math Notebook v2 transformation
 
-This is the master plan. It records every decision, the architecture we're targeting, and the 18 phases we'll ship against. Other docs in this directory drill into specific subjects; this one is the spine.
+This is the master plan. It records every decision, the architecture we're targeting, and the 17 phases we ship against. Other docs in this directory drill into specific subjects; this one is the spine.
+
+> **Status — v2 is closed.** Every phase shipped, and every item that was originally deferred has been closed via the A1–H1 follow-up sequence. See [`transformation-complete.md`](./transformation-complete.md) for the final summary and [`deferred-and-stubbed.md`](./deferred-and-stubbed.md) for the historical follow-up log with one commit per resolved item.
 
 ## Context
 
