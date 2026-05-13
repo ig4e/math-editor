@@ -67,9 +67,13 @@ export function Workspace({ initialLayout }: Props) {
       }
       const C = panel.component;
       return (
-        <PanelSuspense>
-          <C />
-        </PanelSuspense>
+        // data-tour-target lets the Tour spotlight find this panel by id
+        // without coupling to flexlayout's internal node IDs.
+        <div data-tour-target={panel.id} className="h-full w-full">
+          <PanelSuspense>
+            <C />
+          </PanelSuspense>
+        </div>
       );
     },
     [],
