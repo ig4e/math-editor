@@ -1,9 +1,8 @@
-// MathLive bundles its fonts at `mathlive/fonts/`, but Vite doesn't copy
-// them into the build output. Pointing fontsDirectory at jsdelivr's CDN
-// avoids any build-config gymnastics and always matches the installed
-// version (pinned via the URL).
+// MathLive's bundled woff2 fonts are emitted into `dist/fonts/` by the
+// `mathliveFontsPlugin` in vite.config.ts. We point fontsDirectory at the
+// served path so the app renders math offline. PWA precaches *.woff2.
 import { MathfieldElement } from 'mathlive';
-MathfieldElement.fontsDirectory = 'https://cdn.jsdelivr.net/npm/mathlive@0.105.3/fonts';
+MathfieldElement.fontsDirectory = '/fonts';
 // No need for keypress sounds — disable so we don't 404 on those too.
 MathfieldElement.soundsDirectory = null;
 
