@@ -231,6 +231,31 @@ const bootstrap: Command[] = [
     },
   },
   {
+    id: 'math.ocrSelection',
+    label: 'Convert sketched selection to math',
+    category: 'Math',
+    icon: 'wand',
+    defaultShortcut: '$mod+Shift+M',
+    run: async (ctx) => {
+      const s = ctx.getState();
+      const { getExcalidrawAPI } = await import('../panels/canvas/inject');
+      const api = getExcalidrawAPI();
+      if (!api) { s.toast('Canvas not ready', 'warn'); return; }
+      s.toast('Reading selection…', 'info');
+      const { snapshotSelection } = await import('../panels/canvas/snapshotSelection');
+      const snap = await snapshotSelection(api);
+      if (!snap) { s.toast('Select something to convert first', 'warn'); return; }
+      const { transcribeImageToLatex } = await import('../ai/ocr');
+      const result = await transcribeImageToLatex(snap.dataURL);
+      if (!result.ok || !result.latex) {
+        s.toast(result.reason ?? 'OCR failed', 'error');
+        return;
+      }
+      s.addMathBlock({ x: 220, y: 220, latex: result.latex });
+      s.toast(`Converted via ${result.via ?? 'AI'}`, 'success');
+    },
+  },
+  {
     id: 'math.openInWolfram',
     label: 'Open selection in Wolfram Alpha',
     category: 'Math',
