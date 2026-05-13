@@ -22,6 +22,8 @@ import { Toaster }         from './components/Toaster';
 import { ConfirmDialog }   from './components/ConfirmDialog';
 import { IconSprite }      from './components/Icons';
 import { TooltipProvider } from './components/common';
+import { Tour }            from './onboarding/Tour';
+import { seedWelcomeIfFresh } from './onboarding/welcome';
 
 import { useStore } from './state/store';
 import { useThemeSync }      from './hooks/useThemeSync';
@@ -42,8 +44,13 @@ export default function App() {
   }, [fontScale]);
 
   // On boot, if the URL hash carries a share payload, apply it.
+  // Then, on a true first run, seed the welcome blocks.
   useEffect(() => {
-    void applyShareFromHash();
+    void (async () => {
+      await applyShareFromHash();
+      // Defer to next tick so persisted state has rehydrated.
+      setTimeout(() => seedWelcomeIfFresh(), 200);
+    })();
   }, []);
 
   // If the URL hash carries a room=<id>, join that collab session.
@@ -70,6 +77,7 @@ export default function App() {
       <CommandPalette />
       <Toaster />
       <ConfirmDialog />
+      <Tour />
     </TooltipProvider>
   );
 }

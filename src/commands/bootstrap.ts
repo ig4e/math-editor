@@ -329,6 +329,16 @@ const bootstrap: Command[] = [
 
   // ---------- Help ----------
   {
+    id: 'help.tour',
+    label: 'Take the tour',
+    category: 'Help',
+    icon: 'sparkles',
+    run: async () => {
+      const { openTour } = await import('../onboarding/Tour');
+      openTour();
+    },
+  },
+  {
     id: 'help.keybindings',
     label: 'Show keyboard shortcuts',
     category: 'Help',
