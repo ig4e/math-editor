@@ -39,6 +39,7 @@
     "html-to-image": "^1.11.13",
     "idb-keyval": "^6.2.2",
     "immer": "^10.1.1",
+    "jspdf": "^4.2.1",
     "jsxgraph": "^1.12.2",
     "marked": "^18.0.3",
     "mathlive": "^0.105.0",

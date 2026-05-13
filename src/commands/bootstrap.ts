@@ -148,6 +148,106 @@ const bootstrap: Command[] = [
       if (prev) s.setActiveSheet(prev);
     },
   },
+  {
+    id: 'file.copyShareLink',
+    label: 'Copy share link (active sheet)',
+    category: 'File',
+    icon: 'link',
+    defaultShortcut: '$mod+Shift+C',
+    run: async (ctx) => {
+      const { encodeActiveSheet, buildShareURL } = await import('../share/url');
+      const url = buildShareURL(encodeActiveSheet());
+      try {
+        await navigator.clipboard.writeText(url);
+        ctx.getState().toast('Share link copied', 'success');
+      } catch {
+        ctx.getState().toast(`Share link: ${url.slice(0, 80)}…`, 'info');
+      }
+    },
+  },
+  {
+    id: 'file.copyWorkspaceShareLink',
+    label: 'Copy share link (whole workspace)',
+    category: 'File',
+    icon: 'link',
+    run: async (ctx) => {
+      const { encodeWorkspace, buildShareURL } = await import('../share/url');
+      const url = buildShareURL(encodeWorkspace());
+      try {
+        await navigator.clipboard.writeText(url);
+        ctx.getState().toast('Workspace link copied', 'success');
+      } catch {
+        ctx.getState().toast(`Link: ${url.slice(0, 80)}…`, 'info');
+      }
+    },
+  },
+  {
+    id: 'file.exportMarkdown',
+    label: 'Export sheet as Markdown',
+    category: 'File',
+    icon: 'note',
+    run: async (ctx) => {
+      const s = ctx.getState();
+      const sheet = s.sheets[s.activeSheetId];
+      if (!sheet) return;
+      const { sheetToMarkdown } = await import('../share/markdown');
+      const { downloadBlob } = await import('../share/pdf');
+      const blob = new Blob([sheetToMarkdown(sheet)], { type: 'text/markdown' });
+      downloadBlob(blob, `${sanitize(sheet.name)}.md`);
+      s.toast('Markdown exported', 'success');
+    },
+  },
+  {
+    id: 'file.exportLatex',
+    label: 'Export sheet as LaTeX',
+    category: 'File',
+    icon: 'fx',
+    run: async (ctx) => {
+      const s = ctx.getState();
+      const sheet = s.sheets[s.activeSheetId];
+      if (!sheet) return;
+      const { sheetToLatex } = await import('../share/latex');
+      const { downloadBlob } = await import('../share/pdf');
+      const blob = new Blob([sheetToLatex(sheet)], { type: 'application/x-tex' });
+      downloadBlob(blob, `${sanitize(sheet.name)}.tex`);
+      s.toast('LaTeX exported', 'success');
+    },
+  },
+  {
+    id: 'file.exportPDF',
+    label: 'Export sheet as PDF',
+    category: 'File',
+    icon: 'download',
+    defaultShortcut: '$mod+Shift+E',
+    run: async (ctx) => {
+      const s = ctx.getState();
+      const sheet = s.sheets[s.activeSheetId];
+      if (!sheet) return;
+      s.toast('Generating PDF…', 'info');
+      const { sheetToPDF, downloadBlob } = await import('../share/pdf');
+      const blob = await sheetToPDF(sheet);
+      downloadBlob(blob, `${sanitize(sheet.name)}.pdf`);
+      s.toast('PDF exported', 'success');
+    },
+  },
+  {
+    id: 'file.exportWorkspace',
+    label: 'Export workspace (JSON)',
+    category: 'File',
+    icon: 'download',
+    run: async (ctx) => {
+      const s = ctx.getState();
+      const payload = JSON.stringify({
+        v: 1,
+        sheets: s.sheets,
+        sheetOrder: s.sheetOrder,
+        activeSheetId: s.activeSheetId,
+      }, null, 2);
+      const { downloadBlob } = await import('../share/pdf');
+      downloadBlob(new Blob([payload], { type: 'application/json' }), 'math-notebook.json');
+      s.toast('Workspace exported', 'success');
+    },
+  },
 
   // ---------- Help ----------
   {
@@ -189,4 +289,8 @@ export function syncPanelOpenCommands(): void {
 export function registerBootstrapCommands(): void {
   registerCommands(bootstrap);
   syncPanelOpenCommands();
+}
+
+function sanitize(name: string): string {
+  return name.replace(/[^a-z0-9._-]+/gi, '-').replace(/^-+|-+$/g, '') || 'untitled';
 }

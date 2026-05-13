@@ -26,6 +26,7 @@ import { TooltipProvider } from './components/common';
 import { useStore } from './state/store';
 import { useThemeSync }      from './hooks/useThemeSync';
 import { useToastLifecycle } from './hooks/useToastLifecycle';
+import { applyShareFromHash } from './share/loader';
 
 export default function App() {
   useThemeSync();
@@ -39,6 +40,11 @@ export default function App() {
     document.documentElement.style.fontSize = `${fontScale * 100}%`;
     return () => { document.documentElement.style.fontSize = ''; };
   }, [fontScale]);
+
+  // On boot, if the URL hash carries a share payload, apply it.
+  useEffect(() => {
+    void applyShareFromHash();
+  }, []);
 
   return (
     <TooltipProvider delayDuration={350}>
