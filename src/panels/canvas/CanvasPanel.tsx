@@ -23,6 +23,7 @@ import { CanvasTopRight } from './CanvasTopRight';
 import { CanvasFooter } from './CanvasFooter';
 import { CanvasWelcome } from './CanvasWelcome';
 import { MathOverlay } from './MathOverlay';
+import { SelectionToolbar } from './SelectionToolbar';
 import { useAnchorSync } from './anchors';
 import { setExcalidrawAPI } from './inject';
 
@@ -105,6 +106,7 @@ export default function CanvasPanel() {
         <CanvasWelcome />
       </Excalidraw>
       <MathOverlay apiRef={apiRef} />
+      <SelectionToolbar apiRef={apiRef} />
     </div>
   );
 }
