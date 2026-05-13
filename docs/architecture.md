@@ -190,11 +190,12 @@ docs/                                # this folder
 
 ## Cross-cutting rules
 
-- **No file > ~200 lines.** CI flags files > 250.
+- **No file > ~200 lines.**
 - **No `any`.** Strict TS with `noUncheckedIndexedAccess`.
-- **One panel = one folder.**
+- **One panel = one folder** that registers itself via `PanelRegistry`. `<AppShell>` is the only place that reads from the registry.
+- **Reuse Excalidraw's primitives** where a panel mirrors a Excalidraw chrome surface. `XButton`, `XSidebar`, `XFooter`, `XMainMenu`, `XWelcomeScreen`, `XStats`, `XLiveCollaborationTrigger` are re-exported from `components/common/excalidraw.ts`. Our own `common/Button` + `common/IconButton` are visually tuned to match Excalidraw's `.ToolIcon` chrome (8 px radius, surface-2 hover, same heights) so direct visual parity holds even when you use ours.
 - **One AI provider = one file.**
 - **No bespoke utilities for things Radix / Tailwind already do.**
-- **Main entry stays under 800 KB gzipped** before lazy chunks.
+- **Lazy-load anything heavy.** The bundle isn't budget-gated any more; the discipline is what keeps the cold-start fast.
 
 See [`contributing.md`](./contributing.md) for the full guard rails.

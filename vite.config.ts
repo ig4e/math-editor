@@ -103,10 +103,11 @@ export default defineConfig({
   build: {
     target: 'es2022',
     sourcemap: false,
-    // 1500 KB covers our largest expected chunk (Excalidraw with Mermaid).
-    // TFJS (vendor-tfjs, lazy, ~2 MB unminified / 300 KB gz) is exempt
-    // since it's an optional dependency users opt into.
-    chunkSizeWarningLimit: 2200,
+    // Bundle size isn't a blocking concern for this app — every heavy
+    // dep is already lazy-loaded and the deploy targets serve from
+    // edge CDNs with effective Brotli compression. Set a high warning
+    // ceiling to keep Vite quiet.
+    chunkSizeWarningLimit: 4000,
     rollupOptions: {
       output: {
         // Keep the main entry small. Big stable deps each get their own

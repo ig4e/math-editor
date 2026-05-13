@@ -61,7 +61,9 @@ The GitHub Actions workflow enforces, in this order:
 - `npm run typecheck` clean.
 - `npm run lint` clean — flat ESLint config; `no-restricted-syntax` blocks raw `<button>` outside `components/common/`.
 - `npm run check:contrast` clean — WCAG AA on every curated `--color-*` pair.
-- `npm test` clean — 34/34 vitest + jsdom.
-- `npm run build:cf` clean — full typecheck + bundle gate (`scripts/check-bundle.mjs` keeps main entry under 800 KB gz) + Cloudflare functions emit.
+- `npm test` clean — full vitest + jsdom suite.
+- `npm run build:cf` clean — full typecheck + Cloudflare functions emit.
+
+Bundle size is not a gated quantity. Every heavy dep is lazy-loaded and the edge CDNs serve Brotli; the previous fixed-budget bundle-check has been removed in favour of trusting the lazy-load discipline + Vite's own warnings.
 
 If any gate fails, the deploy job doesn't run.

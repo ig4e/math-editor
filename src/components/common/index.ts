@@ -23,3 +23,10 @@ export { SkeletonRow, SkeletonCard, Spinner } from './Skeleton';
 export { PanelHeader, PanelRibbon, PanelStatus } from './PanelHeader';
 export { Kbd } from './Kbd';
 export { Tooltip, TooltipProvider } from './Tooltip';
+
+// Excalidraw re-exports — use these in panel code when you want
+// pixel-for-pixel parity with the canvas's own chrome.
+export {
+  XButton, XSidebar, XFooter, XMainMenu, XWelcomeScreen,
+  XLiveCollaborationTrigger, XStats,
+} from './excalidraw';

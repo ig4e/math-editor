@@ -1,5 +1,8 @@
 // Square button + Radix Tooltip. The default chrome for panel headers
-// and toolbars. Uses Icons.tsx names through a typed `icon` prop.
+// and toolbars. Visually matches Excalidraw's `.ToolIcon` — 28-32 px
+// square, 8 px radius, hover-brightening surface, accent-bg active
+// state — so a panel-header IconButton sits flush next to Excalidraw's
+// zoom / undo controls.
 
 import { forwardRef, type ButtonHTMLAttributes } from 'react';
 import { Icon, type IconName } from '../Icons';
@@ -22,7 +25,7 @@ interface Props extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'title'> {
 }
 
 const SIZES: Record<IconButtonSize, string> = {
-  sm: 'w-6 h-6',
+  sm: 'w-7 h-7',
   md: 'w-8 h-8',
   lg: 'w-10 h-10',
 };
@@ -36,7 +39,8 @@ export const IconButton = forwardRef<HTMLButtonElement, Props>(
         aria-label={label}
         {...rest}
         className={cx(
-          'inline-flex items-center justify-center rounded-md',
+          'inline-flex items-center justify-center rounded-lg',
+          // 8 px radius matches Excalidraw's `.ToolIcon`.
           'transition-colors duration-150 ease-out',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app',
           'disabled:opacity-60 disabled:cursor-not-allowed',

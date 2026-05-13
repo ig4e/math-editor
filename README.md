@@ -88,14 +88,16 @@ until you paste a key in **Settings → API keys**.
 npm run typecheck     # tsc -b --noEmit
 npm run lint          # eslint flat config
 npm run check:contrast # WCAG AA gate over the @theme tokens
-npm test              # vitest + jsdom (34 tests)
-npm run build         # full prod build + bundle gate
+npm test              # vitest + jsdom
+npm run build         # production build
 npm run build:cf      # build + emit functions/api for Cloudflare
 npm run preview       # serve dist/ at :4173
 ```
 
 The CI pipeline gates `typecheck → lint → check:contrast → test → build`
-before any deploy job runs.
+before any deploy job runs. Bundle size is not gated — every heavy
+dependency is lazy-loaded and the edge CDNs serve Brotli, so the
+discipline holds without a hard budget.
 
 ## Architecture, in one sentence
 

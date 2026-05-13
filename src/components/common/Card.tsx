@@ -1,5 +1,9 @@
-// Surface + border + radius + padding. Used for steps cards, AI message
-// bubbles, reference entries, settings groups.
+// Surface + border + radius + padding. Used for steps cards, AI
+// message bubbles, reference entries, settings groups.
+//
+// Radius (12 px) matches Excalidraw's `.island` chrome — the rounded
+// panel they use for the library / dock / dialogs. Density picks line
+// up with Excalidraw's `--space-factor` rhythm.
 
 import type { HTMLAttributes, ReactNode } from 'react';
 import { cx } from '../../utils/cx';
