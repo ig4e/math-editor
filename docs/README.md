@@ -31,6 +31,7 @@ If you're reading this for the first time, take the docs in this order:
 ## Live progress docs
 
 - [`phase-1-progress.md`](./phase-1-progress.md) — Phase 1 execution plan & sub-commit checklist.
+- [`phase-2-progress.md`](./phase-2-progress.md) — Phase 2 sub-commit checklist + canvas folder map.
 
 ## Where the source code lives
 
