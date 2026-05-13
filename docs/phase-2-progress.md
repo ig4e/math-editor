@@ -19,12 +19,14 @@ Closed. Canvas mounts Excalidraw with its full native UI extended via documented
 - [x] Anchor system lets lasso a mix of math blocks + Excalidraw shapes move together
 - [x] `inject.ts` API: arrows / bound arrows / text / image / shapes
 
-## Deferred / stubbed
+## Deferred / stubbed — CLOSED
 
-See [`deferred-and-stubbed.md`](./deferred-and-stubbed.md#p2--excalidraw-integration) for the canonical list. Specifically for P2:
+Both P2 deferrals shipped in the follow-up commit sequence:
 
-- **Selection-floating toolbar** ("Solve / Graph / Ask AI" overlay when blocks are selected) — actions exist via panels + commands; no floating bar overlay yet.
-- **Math-diagram templates as a published Excalidraw Library** (number line, unit circle, Venn, MLP schematic, etc.) — `inject.ts` API in place, curated content not shipped.
+- **Selection-floating toolbar** — `cd0925e` (B1). `src/panels/canvas/SelectionToolbar.tsx` reads `appState.selectedElementIds`, finds math-block anchors, and overlays Solve / Graph / Ask AI actions at the selection bbox.
+- **Math-diagram templates library** — `7376ff4` (B2). 11 templates in `src/panels/canvas/templates.ts`, picker dialog, command `canvas.insertTemplate`, and the published `public/math-templates.excalidrawlib` regenerable via `node scripts/emit-library.mjs`.
+
+See [`deferred-and-stubbed.md`](./deferred-and-stubbed.md) for the full audit trail.
 
 ## Architecture map
 

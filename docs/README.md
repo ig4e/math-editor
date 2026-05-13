@@ -30,8 +30,8 @@ If you're reading this for the first time, take the docs in this order:
 
 ## Live progress docs
 
-- [`transformation-complete.md`](./transformation-complete.md) — final v2 summary, bundle profile, follow-ups.
-- [`deferred-and-stubbed.md`](./deferred-and-stubbed.md) — honest accounting of what's NOT in v2 but was on the roadmap.
+- [`transformation-complete.md`](./transformation-complete.md) — final v2 summary, bundle profile, close-out commit table.
+- [`deferred-and-stubbed.md`](./deferred-and-stubbed.md) — closed. Historical follow-up log with the resolving commit per item.
 - [`phase-1-progress.md`](./phase-1-progress.md) — Phase 1 execution plan & sub-commit checklist.
 - [`phase-2-progress.md`](./phase-2-progress.md) — Phase 2 sub-commit checklist + canvas folder map.
 

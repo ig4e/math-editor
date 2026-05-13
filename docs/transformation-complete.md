@@ -28,10 +28,8 @@ branch. This doc is the at-a-glance summary; per-phase progress lives in
 | P16 | Curriculum-aware mode | ✅ | 8 curricula; tunes Reference filter + AI prompt |
 | P17 | Polish | ✅ | welcome sheet + 5-step tour + help.tour command |
 
-Two items explicitly logged as **follow-ups** rather than gaps:
-
-- **Excalidraw scene sync over Yjs (P11)** — y-excalidraw has React 19 compatibility issues; rolling our own deep binding is its own work item. Math-block sync + awareness ships fully.
-- **Math-rendered glyphs in PDF export (P8)** — current PDF lists equations as LaTeX source under monospace. KaTeX → image pipeline is a polish item.
+All 13 follow-up items previously logged in `deferred-and-stubbed.md`
+have since shipped. See that doc for the commit-by-commit audit trail.
 
 ## Final shape of `src/`
 
@@ -98,10 +96,30 @@ typecheck, and 20/20 vitest tests are green on every commit. Manual smoke
 checks against the verification list are the user's exercise; see the
 gates noted in each P-phase commit message.
 
-## Cross-cutting follow-ups (not gating)
+## Cross-cutting follow-ups closed
 
-1. **Excalidraw scene sync via Yjs** (P11 leftover).
-2. **PDF math-glyph rendering** via KaTeX → image (P8 leftover).
-3. **Playwright integration tests** for the multi-panel flows (P17 wider polish).
-4. **Practice generator** in ML Lab — wires to the curriculum prompt (P16 ⨉ P15).
-5. **Excalidraw Mermaid removal** to shed the 720 KB lazy chunk for users who never use shape-text-as-diagrams.
+All five items previously listed here shipped in the close-out
+sequence. The only remaining cross-cutting work is the optional
+Excalidraw Mermaid removal (would shed ~720 KB lazy for users who
+never paste mermaid syntax into shape text); it's a configuration
+flag in Excalidraw 0.18+ and could be a one-line change if it
+becomes a real bottleneck.
+
+## What landed in close-out (after the initial 17 phases)
+
+| Commit | Subject |
+|---|---|
+| `36c3d36` | A1 — MathLive fonts bundled offline (Vite plugin emits `dist/fonts/*.woff2`) |
+| `5fdacab` | A2 — ESLint flat config + `no-restricted-syntax` for `<button>` + WCAG contrast script in CI |
+| `cd0925e` | B1 — Selection-floating toolbar on canvas |
+| `7376ff4` | B2 — 11-template math-diagram library + `.excalidrawlib` + picker dialog |
+| `801a3a7` | B3 — Tour spotlight SVG-mask overlay with per-step targets |
+| `18277ec` | B4 — Tablet / stylus-mode toggle (44 px tap targets) |
+| `5da7a01` | C1 — PDF math glyphs via MathLive + html-to-image |
+| `32292c9` | C2 — Python code blocks in Notes panel |
+| `c478aee` | D1 — `api/ai-proxy.ts` server-side AI proxy edge function |
+| `35939ec` | E1 — Matrix symbolic ops via Pyodide-SymPy + char-poly op |
+| `083e386` | F1 — Excalidraw scene sync via custom Yjs binding |
+| `df27d02` | G1 — TFJS train mode in ML Lab (lazy `optionalDependencies`) |
+| `e9f8d6c` | G2 — Pin descent trajectory as image + chain of arrows |
+| `249a977` | H1 — Practice generator command (curriculum + AI → math blocks) |
