@@ -9,6 +9,7 @@ import { AppearanceSection } from './AppearanceSection';
 import { KeybindsSection } from './KeybindsSection';
 import { LayoutSection } from './LayoutSection';
 import { APIKeysSection } from './APIKeysSection';
+import { CurriculumSection } from './CurriculumSection';
 
 const ITEMS: readonly TabItem[] = [
   {
@@ -34,15 +35,7 @@ const ITEMS: readonly TabItem[] = [
   {
     value: 'curriculum',
     label: 'Curriculum',
-    content: (
-      <Section title="Curriculum">
-        <EmptyState
-          icon="book"
-          title="Coming in Phase 16"
-          description="Pick a curriculum (AP Calc BC, IB HL, A-Level Further Maths…) to bias the AI's notation, filter the reference panel, and tune the practice generator."
-        />
-      </Section>
-    ),
+    content: <Section title="Curriculum"><CurriculumSection /></Section>,
   },
   {
     value: 'storage',

@@ -75,6 +75,14 @@ function systemPrompt(contextSummary?: string): string {
     'You can call tools to solve / simplify / plot / drop blocks on the canvas.',
     'Default to LaTeX for math. Be concise; prefer one short paragraph + a tool call over a long essay.',
   ];
+  const c = useStore.getState().curriculum;
+  if (c && c !== 'none') {
+    const custom = useStore.getState().curriculumCustom;
+    const label = c === 'custom' ? custom : c;
+    if (label) {
+      base.push(`The user is working at the level of "${label}". Prefer notation and depth appropriate to that.`);
+    }
+  }
   if (contextSummary) {
     base.push('', '## Current canvas context', contextSummary);
   }
