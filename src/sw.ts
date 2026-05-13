@@ -1,23 +1,30 @@
 // Custom service worker — registered by `vite-plugin-pwa` with the
-// `injectManifest` strategy, which means *this* file is the SW source and
-// the plugin only injects the precache manifest at __WB_MANIFEST.
+// `injectManifest` strategy. *This* file is the SW source; the plugin
+// only injects the precache manifest at __WB_MANIFEST.
 //
-// Strategy summary:
+// Strategy:
 //   - precache: every emitted asset, manifest, MathLive fonts, icons.
-//   - same-origin static (cache-first): assets served outside /api/.
+//   - same-origin script/style/font/image (stale-while-revalidate):
+//     served from cache for speed, refreshed in the background.
 //   - /api/* (network-only): edge functions; offline → real failure.
-//   - navigation (network-first, falls back to cached shell): index.html.
+//   - navigation (network-first): always try the latest index.html so
+//     a new deploy's hashed-chunk references win; fall back to cache.
+//
+// Lifecycle: install + skipWaiting + clientsClaim so a new SW kicks
+// in immediately on the next visit. This trades a small risk of
+// mid-edit chunk swaps for the much bigger benefit of users on the
+// previous build (e.g. the FlexLayout v2 shell) getting the latest
+// app code without a hard reload.
 
 /// <reference lib="webworker" />
 
 import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching';
 import { registerRoute, NavigationRoute } from 'workbox-routing';
-import { CacheFirst, NetworkFirst, NetworkOnly } from 'workbox-strategies';
+import { StaleWhileRevalidate, NetworkFirst, NetworkOnly } from 'workbox-strategies';
 import { ExpirationPlugin } from 'workbox-expiration';
+import { clientsClaim } from 'workbox-core';
 
 declare const self: ServiceWorkerGlobalScope & {
-  // vite-plugin-pwa scans the source for the literal `self.__WB_MANIFEST`
-  // and inlines the precache manifest at build time.
   __WB_MANIFEST: Array<{ url: string; revision: string | null }>;
 };
 
@@ -31,7 +38,11 @@ registerRoute(
   new NetworkOnly(),
 );
 
-// ----- same-origin static cache-first ---------------------------------
+// ----- same-origin static stale-while-revalidate ----------------------
+// SWR means the user sees a fast cached hit instantly *and* the worker
+// fetches a fresh copy in the background. Combined with hashed-chunk
+// filenames this is effectively immutable per build but self-healing
+// across builds.
 registerRoute(
   ({ request, url }) =>
     url.origin === self.location.origin &&
@@ -40,30 +51,36 @@ registerRoute(
       request.destination === 'script' ||
       request.destination === 'font' ||
       request.destination === 'image'),
-  new CacheFirst({
-    cacheName: 'static-v1',
-    plugins: [new ExpirationPlugin({ maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 30 })],
+  new StaleWhileRevalidate({
+    // Cache name bumped (was static-v1) so the old v2-era cache is
+    // discarded on this SW activation.
+    cacheName: 'static-v3',
+    plugins: [new ExpirationPlugin({ maxEntries: 300, maxAgeSeconds: 60 * 60 * 24 * 30 })],
   }),
 );
 
-// ----- navigation: network-first, fall back to the precached shell ---
+// ----- navigation: network-first (so deploys land immediately) -------
 registerRoute(
   new NavigationRoute(
     new NetworkFirst({
-      cacheName: 'pages-v1',
+      // Bumped name to invalidate the old shell cache.
+      cacheName: 'pages-v3',
       networkTimeoutSeconds: 3,
     }),
   ),
 );
 
-// ----- lifecycle: skip-waiting on demand ------------------------------
+// ----- lifecycle -----------------------------------------------------
+self.addEventListener('install', () => {
+  // Activate immediately rather than waiting for old tabs to close.
+  self.skipWaiting();
+});
+
+// Claim every open tab so the new SW services them right away.
+clientsClaim();
+
 self.addEventListener('message', (event) => {
   if ((event.data as { type?: string } | null)?.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
-});
-
-self.addEventListener('install', () => {
-  // Don't self.skipWaiting() automatically — let the client opt-in via
-  // postMessage so we don't reload mid-edit.
 });

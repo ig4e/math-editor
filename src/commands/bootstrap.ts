@@ -353,6 +353,81 @@ const bootstrap: Command[] = [
       }
     },
   },
+  {
+    id: 'help.resetCache',
+    label: 'Reset app cache (force-reload from server)',
+    description: 'Unregisters the service worker, deletes every cache, and reloads. Use this if the app shows a stale screen after a deploy.',
+    category: 'Help',
+    icon: 'refresh',
+    run: async (ctx) => {
+      const { askConfirm } = await import('../components/ConfirmDialog');
+      const ok = await askConfirm({
+        title: 'Reset app cache?',
+        message: 'Unregisters the service worker, deletes every cache, and reloads the page from the server. Your sheets are saved in IndexedDB and will not be affected.',
+        confirmLabel: 'Reset and reload',
+      });
+      if (!ok) return;
+      const { resetServiceWorkerAndCaches } = await import('../pwa');
+      ctx.getState().toast('Clearing cache…', 'info');
+      await resetServiceWorkerAndCaches();
+    },
+  },
+  {
+    id: 'file.exportSVG',
+    label: 'Export sheet as SVG',
+    description: 'Saves the whole canvas (math blocks + drawings) as a single vector SVG file.',
+    category: 'File',
+    icon: 'download',
+    run: async (ctx) => {
+      const { getExcalidrawAPI } = await import('../panels/canvas/inject');
+      const api = getExcalidrawAPI();
+      if (!api) { ctx.getState().toast('Canvas not ready', 'warn'); return; }
+      const { exportToSvg } = await import('@excalidraw/excalidraw');
+      const elements = api.getSceneElements();
+      const appState = api.getAppState();
+      const files = api.getFiles();
+      const svg = await exportToSvg({
+        elements,
+        appState: { ...appState, exportBackground: true, exportWithDarkMode: true, exportEmbedScene: false },
+        files,
+        renderEmbeddables: false,
+      });
+      const blob = new Blob([new XMLSerializer().serializeToString(svg)], { type: 'image/svg+xml' });
+      const { downloadBlob } = await import('../share/pdf');
+      const s = ctx.getState();
+      const sheet = s.sheets[s.activeSheetId];
+      downloadBlob(blob, `${sanitize(sheet?.name ?? 'sheet')}.svg`);
+      s.toast('SVG exported', 'success');
+    },
+  },
+  {
+    id: 'file.exportPNG',
+    label: 'Export sheet as PNG',
+    description: 'Rasterises the whole canvas (math blocks + drawings) as a high-resolution PNG.',
+    category: 'File',
+    icon: 'image',
+    run: async (ctx) => {
+      const { getExcalidrawAPI } = await import('../panels/canvas/inject');
+      const api = getExcalidrawAPI();
+      if (!api) { ctx.getState().toast('Canvas not ready', 'warn'); return; }
+      const { exportToBlob } = await import('@excalidraw/excalidraw');
+      const elements = api.getSceneElements();
+      const appState = api.getAppState();
+      const files = api.getFiles();
+      const blob = await exportToBlob({
+        elements,
+        appState: { ...appState, exportBackground: true, exportWithDarkMode: true, exportEmbedScene: false },
+        files,
+        mimeType: 'image/png',
+        quality: 1,
+      });
+      const { downloadBlob } = await import('../share/pdf');
+      const s = ctx.getState();
+      const sheet = s.sheets[s.activeSheetId];
+      downloadBlob(blob, `${sanitize(sheet?.name ?? 'sheet')}.png`);
+      s.toast('PNG exported', 'success');
+    },
+  },
 ];
 
 /**

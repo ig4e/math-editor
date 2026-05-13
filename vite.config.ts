@@ -85,7 +85,12 @@ export default defineConfig({
       strategies: 'injectManifest',
       srcDir: 'src',
       filename: 'sw.ts',
-      registerType: 'prompt',
+      // autoUpdate: new SW takes over as soon as it's installed — paired
+      // with skipWaiting + clientsClaim in sw.ts this means a stale shell
+      // (e.g. the v2 FlexLayout build sitting in someone's cache) gets
+      // replaced on the next visit rather than waiting for every tab to
+      // close.
+      registerType: 'autoUpdate',
       injectRegister: false, // we register manually via src/pwa.ts
       manifest: false,        // we ship public/manifest.webmanifest by hand
       injectManifest: {
