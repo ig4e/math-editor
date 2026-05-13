@@ -5,8 +5,79 @@
 
 import { registerCommands, type Command } from './commands';
 import { getAllPanels } from '../workspace/PanelRegistry';
+import { solve } from '../solvers';
+import '../solvers/all';
+import { detectAll } from '../panels/variables/parser';
+import type { MathBlock } from '../state/types';
 
 const bootstrap: Command[] = [
+  // ---------- Math ----------
+  {
+    id: 'math.solve',
+    label: 'Solve selected',
+    category: 'Math',
+    icon: 'eval',
+    defaultShortcut: '$mod+Enter',
+    when: (ctx) => ctx.selectedMathBlockCount >= 1,
+    run: async (ctx) => {
+      const state = ctx.getState();
+      const sheet = state.sheets[state.activeSheetId];
+      if (!sheet) return;
+      const selectedBlocks = state.selectedIds
+        .map((id) => sheet.blocks.find((b) => b.id === id))
+        .filter((b): b is MathBlock => !!b && b.type === 'math');
+      if (selectedBlocks.length === 0) {
+        state.toast('Select a math block first', 'warn');
+        return;
+      }
+      const firstSel = selectedBlocks[0];
+      if (!firstSel) return;
+      const variables = Object.fromEntries(
+        detectAll(sheet.blocks.filter((b): b is MathBlock => b.type === 'math'))
+          .map((d) => [d.name, d.value]),
+      );
+      ctx.workspace.openPanel('solver');
+      const r = await solve(
+        { source: firstSel.latex, capability: 'solve', variables },
+        { requireSteps: state.showSteps },
+      );
+      if (r.ok && r.latex) {
+        state.toast(`${firstSel.latex} → ${r.latex}`, 'success');
+      } else {
+        state.toast(r.error ?? 'Solve failed', 'error');
+      }
+    },
+  },
+  {
+    id: 'math.simplify',
+    label: 'Simplify selected',
+    category: 'Math',
+    icon: 'fx',
+    defaultShortcut: '$mod+Shift+S',
+    when: (ctx) => ctx.selectedMathBlockCount >= 1,
+    run: (ctx) => { ctx.workspace.openPanel('solver'); },
+  },
+  {
+    id: 'math.solveSystem',
+    label: 'Solve as system',
+    category: 'Math',
+    icon: 'link',
+    defaultShortcut: '$mod+Shift+Enter',
+    when: (ctx) => ctx.selectedMathBlockCount >= 2,
+    run: (ctx) => { ctx.workspace.openPanel('solver'); },
+  },
+  {
+    id: 'prefs.toggleSteps',
+    label: 'Toggle step-by-step',
+    category: 'Math',
+    icon: 'steps',
+    run: (ctx) => {
+      const s = ctx.getState();
+      s.setShowSteps(!s.showSteps);
+      s.toast(`Step-by-step ${!s.showSteps ? 'on' : 'off'}`, 'info');
+    },
+  },
+
   // ---------- View ----------
   {
     id: 'view.commandPalette',
