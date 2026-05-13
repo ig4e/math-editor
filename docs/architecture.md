@@ -42,9 +42,9 @@ One Zustand store, slice-composed via the `AppSlice<T>` mutator pattern:
 | `blocksSlice` | math + text blocks per sheet |
 | `scenesSlice` | per-sheet Excalidraw scene (elements + appState + files) |
 | `selectionSlice` | block + scene selection bridge |
-| `workspaceSlice` | flexlayout JSON + active preset |
+| `workspaceSlice` | just `activeSidebarTab` — Excalidraw's `openSidebar` is the live state, we persist the user's last pick |
 | `keysSlice` | BYOK API keys (encrypted at rest) |
-| `prefsSlice` | theme, curriculum, showSteps, default provider/model |
+| `prefsSlice` | font scale, tablet mode, curriculum, showSteps, default provider/model |
 | `toastsSlice` | transient toast queue |
 
 Persist storage is **IndexedDB** via a thin `idb-keyval` adapter — sheets can be MBs without blowing localStorage's 5 MB cap. Persist key is fresh (`math-notebook:v1`).
@@ -147,6 +147,7 @@ src/
 │   ├── mllab/                       #   ML learning lab
 │   └── settings/                    #   API keys, keybinds, curriculum
 │
+├── workspace/                       # AppShell (Excalidraw root) + PanelRegistry + sidebar.css
 ├── commands/                        # palette + registry + bootstrap + templates + practice
 ├── keybinds/                        # editor + defaults + runtime
 ├── solvers/                         # backend registry + adapters
@@ -158,6 +159,13 @@ src/
 ├── collab/                          # Yjs session + custom Excalidraw scene binding
 ├── onboarding/                      # welcome seeds + tour + spotlight
 ├── state/                           # store, slices, selectors, types
+├── panels/canvas/                   # canvas helpers used by AppShell:
+│   ├── BlockEmbed.tsx               #   React content rendered inside math/text embeddables
+│   ├── CanvasFooter.tsx · CanvasMainMenu.tsx · CanvasTopRight.tsx · CanvasWelcome.tsx
+│   ├── SelectionToolbar.tsx · TemplatePicker.tsx · templates.ts
+│   ├── anchors.ts                   #   block ↔ embeddable sync
+│   ├── inject.ts                    #   programmatic scene injection + sidebar toggler
+│   └── snapshotSelection.ts
 ├── components/
 │   ├── common/                      # the design system primitives
 │   └── ...

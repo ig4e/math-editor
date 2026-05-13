@@ -1,6 +1,8 @@
 # Adding a panel
 
-A "panel" is any dockable, draggable surface in the workspace — Canvas, Solver, Graph, AI chat, Settings, etc. Adding one is three steps and never touches the workspace shell.
+A "panel" is one of the tabs in Excalidraw's side `<Sidebar>` — Solver, Graph 2D, AI chat, Settings, etc. Adding one is three steps and never touches the workspace shell.
+
+> **Architectural note (v3+):** the app shell IS Excalidraw. Panels are rendered as `<Sidebar.Tab>` children inside `<AppShell>`. There is no FlexLayout, no separate "workspace" surface — the canvas is the whole window, and the side panel slides in over the right edge when opened. See [`architecture.md`](./architecture.md#the-shell-is-excalidraw).
 
 ## The contract
 
@@ -8,10 +10,10 @@ A "panel" is any dockable, draggable surface in the workspace — Canvas, Solver
 
 ```ts
 export interface Panel {
-  /** Stable ID — referenced from layout JSON and command IDs. */
-  id: string;                                  // 'canvas', 'graph2d', 'ai', …
+  /** Stable ID — referenced by sidebar tabs, commands, and links. */
+  id: string;                                  // 'solver', 'graph2d', 'ai', …
 
-  /** Shown in the flexlayout tab. */
+  /** Tooltip text shown over the icon-only sidebar tab trigger. */
   title: string;
 
   /** From the shared icon set in `Icons.tsx`. */
@@ -20,17 +22,14 @@ export interface Panel {
   /** Always lazy. Wrapped via `lazyPanel(loader)` from `utils/lazy.ts`. */
   component: React.LazyExoticComponent<React.ComponentType>;
 
-  /** Where to dock when first opened. Defaults to 'right'. */
-  defaultLocation?: 'left' | 'right' | 'bottom' | 'center';
-
-  /** Optional buttons rendered in the panel header's right slot. */
-  headerActions?: () => ReactNode;
+  /** Short summary surfaced in the command palette. */
+  description?: string;
 }
 
 export function registerPanel(panel: Panel): void;
 ```
 
-The workspace `<Layout>` looks up panel records by `id` when flexlayout instantiates a tab. Everything else flows from there.
+`<AppShell>` reads `getAllPanels()` and renders each as a `<Sidebar.Tab>` + a trigger icon. Order of registration in `src/panels/index.ts` controls the order of the tab triggers.
 
 ## Three-step recipe
 
@@ -43,12 +42,10 @@ src/panels/myFeature/
 └── (anything else this panel owns: hooks, helpers, types …)
 ```
 
-`MyFeaturePanel.tsx` is the default export and must use the shared panel chrome:
+`MyFeaturePanel.tsx` is the default export and uses the shared panel chrome:
 
 ```tsx
-import { PanelHeader } from '../../components/common/PanelHeader';
-import { PanelStatus } from '../../components/common/PanelStatus';
-import { EmptyState } from '../../components/common/EmptyState';
+import { PanelHeader, PanelStatus, EmptyState } from '../../components/common';
 
 export default function MyFeaturePanel() {
   return (
@@ -75,7 +72,6 @@ registerPanel({
   title: 'My Feature',
   icon: 'sparkles',
   component: lazyPanel(() => import('./MyFeaturePanel')),
-  defaultLocation: 'right',
 });
 ```
 
@@ -85,40 +81,50 @@ Then add one line to `src/panels/index.ts`:
 import './myFeature/register';
 ```
 
-That file is imported once at app bootstrap; every panel's `register.ts` runs as a side effect.
+That file is imported once at app bootstrap; every panel's `register.ts` runs as a side effect, the registry collects the records, and `<AppShell>` renders them.
 
 ### 3. Wire commands (optional but usually wanted)
 
-To make the panel openable from the command palette and from a keybind, add a command in `src/commands/commands.ts`:
+To make the panel openable from the command palette and a keybind, the bootstrap `syncPanelOpenCommands()` already emits a dynamic `view.open.<id>` command for every registered panel that calls `ctx.workspace.openPanel(id)`. If you want a custom shortcut or a different label, register your own command in addition:
 
 ```ts
 {
-  id: 'view.openMyFeature',
-  label: 'Open My Feature',
+  id: 'myFeature.open',
+  label: 'My Feature — show panel',
   category: 'View',
   defaultShortcut: '$mod+Shift+Y',
   run: (ctx) => ctx.workspace.openPanel('myFeature'),
 }
 ```
 
-`ctx.workspace.openPanel(id)` looks up the panel by ID, ensures it's mounted, and focuses its tab.
+`ctx.workspace.openPanel(id)` writes the active tab into the workspace slice **and** calls Excalidraw's `toggleSidebar({ name: 'math-notebook', tab: id, force: true })` so the sidebar flips to the new panel.
 
 ## Conventions to follow
 
 - **Panel chrome is `PanelHeader` + (optional) `PanelRibbon` + content + (optional) `PanelStatus`.** No custom header.
 - **Empty state**: render `<EmptyState>` instead of "Nothing here yet." text.
 - **Errors**: render `<Banner kind="error">` inside the panel, never as a toast.
-- **Loading**: render `<SkeletonRow>` / `<SkeletonCard>` while async work is in flight.
-- **State**: read from the Zustand store with a memoized selector. Don't accept state via props from the workspace.
-- **Side effects**: register them in the panel's hooks, scoped via `useEffect`. They tear down when the panel unmounts.
+- **Loading**: render `<SkeletonRow>` / `<SkeletonCard>` or `<Spinner>` while async work is in flight.
+- **State**: read from the Zustand store with a memoized selector. Don't accept state via props from `<AppShell>`.
+- **Side effects**: register them in the panel's hooks, scoped via `useEffect`. They tear down when the sidebar collapses or the panel unmounts.
+- **No `<button>` outside `components/common/`** — eslint blocks it. Compose Button / IconButton.
 
 ## Anti-patterns to avoid
 
-- Editing `workspace/Workspace.tsx` to add the panel. The registry is the only path in.
-- Importing the panel's component directly from anywhere outside `workspace/`. Lazy-load via the registry.
+- Editing `workspace/AppShell.tsx` to add the panel. The registry is the only path in.
+- Importing the panel's component directly from anywhere outside `workspace/AppShell`. Lazy-load via the registry.
 - Rolling your own button / dropdown / dialog. Compose from `components/common/`.
 - Setting your own theme colors. Tokens are in `index.css`.
+- Trying to "dock" the panel anywhere except inside Excalidraw's sidebar — there is no other layout system.
 
-## Example: minimal "Hello world" panel
+## Programmatic open from anywhere
 
-See `src/panels/hello/` (built in Phase 1 as a smoke test). It's 25 lines, registers itself, and appears in the command palette as **View → Open Hello**.
+If an AI tool call or a panel needs to open another panel:
+
+```ts
+import { workspaceController } from '../../workspace/useWorkspace';
+
+workspaceController.openPanel('graph2d');
+```
+
+This works the same in commands, in inject helpers, and inside other panels' callbacks.

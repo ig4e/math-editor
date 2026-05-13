@@ -5,8 +5,10 @@
 // Order doesn't matter at runtime (the registry is a flat Map), but we
 // keep it sorted by phase + alphabetical for readability.
 
-// Phase 2
-import './canvas/register';
+// Canvas is no longer a sidebar panel — it IS the app shell. Other
+// modules still import from src/panels/canvas/ for the toolbar, math
+// embeddable rendering, and inject helpers, but no `register.ts` for
+// canvas is needed.
 // Phase 3
 import './solver/register';
 import './variables/register';

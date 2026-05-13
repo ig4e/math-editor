@@ -31,6 +31,35 @@ branch. This doc is the at-a-glance summary; per-phase progress lives in
 All 13 follow-up items previously logged in `deferred-and-stubbed.md`
 have since shipped. See that doc for the commit-by-commit audit trail.
 
+## v3 — shell unification (after v2 close-out)
+
+After v2 closed, a final architectural revision dropped `flexlayout-
+react` and rebuilt the entire app shell on Excalidraw's own primitives:
+
+- The Excalidraw canvas IS the app — `<AppShell>` mounts a single
+  full-window `<Excalidraw>` at the root, with no separate layout
+  component above it.
+- Every panel (Solver, Variables, Graph 2D, Graph 3D, AI, Notes,
+  Reference, Inspector, Matrix, Numerics, ML Lab, Settings) is a
+  `<Sidebar.Tab>` inside Excalidraw's native `<Sidebar name="math-
+  notebook" docked>`. The tab triggers are icon-only and styled to
+  match Excalidraw's sidebar chrome via `src/workspace/sidebar.css`.
+- Math + text blocks are `embeddable` scene elements
+  (`mathblock://<id>` / `textblock://<id>` links) — drag, resize,
+  zoom, undo, select, delete, copy/paste are all native.
+- The math toolbar lives in Excalidraw's `<Footer>`; the
+  "+ Math / + Text" pills live in `renderTopRightUI`; the hamburger
+  menu items are appended to `<MainMenu>` alongside Excalidraw's
+  own.
+- The app is dark-only. Tokens in `src/index.css` are sampled from
+  Excalidraw's dark chrome (#121212 canvas, #232329 surface, #a8a5ff
+  accent) so panels and canvas share one palette.
+- `workspaceSlice` shrank from 6 fields (layout JSON, presets,
+  openPanels, …) to one: `activeSidebarTab`. Excalidraw's
+  `appState.openSidebar` is the live source of truth.
+- `flexlayout-react` removed from `package.json`. `Workspace.tsx`,
+  `layout.defaults.ts`, `flexlayout.css` deleted.
+
 ## Final shape of `src/`
 
 ```

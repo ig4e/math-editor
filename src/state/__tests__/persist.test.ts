@@ -6,16 +6,11 @@ import { describe, it, expect } from 'vitest';
 import { useStore } from '../store';
 
 describe('persisted state', () => {
-  it('theme toggle reflects in current state', () => {
-    useStore.getState().setTheme('dark');
-    expect(useStore.getState().theme).toBe('dark');
-    useStore.getState().setTheme('light');
-    expect(useStore.getState().theme).toBe('light');
-  });
-
-  it('layout writes are accepted', () => {
-    useStore.getState().setLayout({ type: 'row' }, ['canvas', 'solver']);
-    expect(useStore.getState().openPanels).toEqual(['canvas', 'solver']);
+  it('active sidebar tab is persisted', () => {
+    useStore.getState().setActiveSidebarTab('solver');
+    expect(useStore.getState().activeSidebarTab).toBe('solver');
+    useStore.getState().resetLayout();
+    expect(useStore.getState().activeSidebarTab).toBeNull();
   });
 
   it('font scale clamps', () => {

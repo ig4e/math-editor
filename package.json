@@ -37,7 +37,6 @@
     "ai": "^6.0.182",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
-    "flexlayout-react": "^0.9.1",
     "html-to-image": "^1.11.13",
     "idb-keyval": "^6.2.2",
     "immer": "^10.1.1",

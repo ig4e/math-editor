@@ -74,13 +74,8 @@ export const useStore = create<Store>()(
         sheets: s.sheets,
         sheetOrder: s.sheetOrder,
         activeSheetId: s.activeSheetId,
-        // workspace
-        layout: s.layout,
-        layoutVersion: s.layoutVersion,
-        openPanels: s.openPanels,
-        activePanelId: s.activePanelId,
-        presets: s.presets,
-        activePresetId: s.activePresetId,
+        // workspace (v3: just remembers the last-active sidebar tab)
+        activeSidebarTab: s.activeSidebarTab,
         // prefs
         theme: s.theme,
         themeAuto: s.themeAuto,

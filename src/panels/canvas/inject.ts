@@ -9,13 +9,29 @@ import { isAnchor } from './anchors';
 
 let apiRef: ExcalidrawImperativeAPI | null = null;
 
-/** Called once by CanvasPanel after `excalidrawAPI` resolves. */
+/** Called once by AppShell after `excalidrawAPI` resolves. */
 export function setExcalidrawAPI(api: ExcalidrawImperativeAPI | null): void {
   apiRef = api;
 }
 
 export function getExcalidrawAPI(): ExcalidrawImperativeAPI | null {
   return apiRef;
+}
+
+// ----- Sidebar toggle ---------------------------------------------------
+// AppShell registers a function that opens the panel sidebar to a named
+// tab. Commands + AI tool-calls reach the sidebar through this seam so
+// they don't need a direct ref to the Excalidraw API.
+
+type SidebarToggler = (tab: string) => boolean;
+let sidebarToggler: SidebarToggler | null = null;
+
+export function setSidebarToggler(fn: SidebarToggler | null): void {
+  sidebarToggler = fn;
+}
+
+export function openPanelTab(tab: string): boolean {
+  return sidebarToggler ? sidebarToggler(tab) : false;
 }
 
 /** Element ID convention for block anchors, mirrored in anchors.ts. */

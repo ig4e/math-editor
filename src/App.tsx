@@ -15,7 +15,7 @@ import { useEffect } from 'react';
 import './panels';
 import './commands';
 
-import { Workspace }       from './workspace/Workspace';
+import { AppShell }        from './workspace/AppShell';
 import { CommandPalette }  from './commands/CommandPalette';
 import { useKeybinds }     from './keybinds/useKeybinds';
 import { Toaster }         from './components/Toaster';
@@ -82,7 +82,7 @@ export default function App() {
   return (
     <TooltipProvider delayDuration={350}>
       <IconSprite />
-      <Workspace />
+      <AppShell />
       <CommandPalette />
       <Toaster />
       <ConfirmDialog />

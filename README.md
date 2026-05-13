@@ -105,12 +105,20 @@ Command / Keybind), or a **backend** (Solver / Grapher / AI provider).
 Adding a feature means adding to one of those — never wiring a new prop
 tree.
 
+The app shell IS Excalidraw. `<AppShell>` mounts a full-window
+`<Excalidraw>` and threads every panel through its native `<Sidebar>`;
+math + text blocks live as scene-native `embeddable` elements; the
+math toolbar lives inside Excalidraw's `<Footer>`; the hamburger menu
+extends `<MainMenu>`. There is no separate layout library.
+
 ```
 src/
-├── workspace/      flexlayout host + PanelRegistry
-├── panels/         12 panel folders — canvas, solver, variables,
-│                   graph, graph3d, ai, notes, reference, inspector,
-│                   matrix, numerics, mllab, settings
+├── workspace/      AppShell (Excalidraw root) + PanelRegistry
+├── panels/         11 sidebar tabs — solver, variables, graph,
+│                   graph3d, ai, notes, reference, inspector,
+│                   matrix, numerics, mllab, settings — plus
+│                   panels/canvas/ which holds canvas helpers
+│                   (TopRight, Footer, MainMenu, BlockEmbed, etc.)
 ├── commands/       palette + registry + bootstrap + templates + practice
 ├── keybinds/       editor + defaults + tinykeys runtime
 ├── solvers/        registry + computeEngine + mathsteps + wolfram
@@ -182,7 +190,7 @@ peer-to-peer. No server beyond the public signaling.
 
 | Concern | Library |
 |---|---|
-| Workspace | `flexlayout-react` |
+| App shell | `@excalidraw/excalidraw`'s native `<Sidebar>` + `<Footer>` + `<MainMenu>` (no extra layout lib) |
 | Command palette / keybinds | `cmdk` + `tinykeys` |
 | Canvas | `@excalidraw/excalidraw` (+ a selective fork of `excalidraw-app`) |
 | Math editor + CAS | `mathlive` + `@cortex-js/compute-engine` + `mathsteps` |

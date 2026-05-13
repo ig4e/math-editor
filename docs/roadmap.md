@@ -2,7 +2,9 @@
 
 This is the master plan. It records every decision, the architecture we're targeting, and the 17 phases we ship against. Other docs in this directory drill into specific subjects; this one is the spine.
 
-> **Status — v2 is closed.** Every phase shipped, and every item that was originally deferred has been closed via the A1–H1 follow-up sequence. See [`transformation-complete.md`](./transformation-complete.md) for the final summary and [`deferred-and-stubbed.md`](./deferred-and-stubbed.md) for the historical follow-up log with one commit per resolved item.
+> **Status — v2 is closed; v3 has shipped on top of it.** Every phase from the original 17-phase plan landed, every originally-deferred item closed via the A1–H1 follow-up sequence, and a final architectural revision (v3) replaced FlexLayout with Excalidraw's native `<Sidebar>` so the entire app is one Excalidraw canvas with the panels as its sidebar tabs. See [`transformation-complete.md`](./transformation-complete.md) and [`architecture.md`](./architecture.md#the-shell-is-excalidraw).
+>
+> **The workspace shell was originally planned around `flexlayout-react`** (see the picks table below). After shipping v2 it became clear that mixing FlexLayout's tabbed-dock paradigm with Excalidraw's full-window canvas created visual seams and integration friction — the canvas felt walled off from the panels. v3 dropped FlexLayout in favour of Excalidraw's own `<Sidebar>` + `<Footer>` + `<MainMenu>` slots. The benefit is that math blocks, the panel rail, the toolbar, and the chrome share one design system because they share one host. The cost was throwing away a working layout system; the trade was worth it.
 
 ## Context
 
@@ -29,7 +31,7 @@ The app must:
 
 | Concern | Pick | License | Notes |
 |---|---|---|---|
-| Workspace shell | `flexlayout-react` ^0.7 | MIT | dockable panels, drag, popout, presets |
+| ~~Workspace shell~~ | ~~`flexlayout-react`~~ | ~~MIT~~ | **Dropped in v3.** Replaced by Excalidraw's native `<Sidebar>` + `<Footer>` + `<MainMenu>` slots — the canvas is the app shell. |
 | Command palette | `cmdk` ^1.0 | MIT | Vercel / Linear-style; tiny |
 | Keybindings | `tinykeys` ^3.0 | MIT | 1 KB; we own the registry |
 | Canvas engine | `@excalidraw/excalidraw` ^0.18 | MIT | React 19 supported |

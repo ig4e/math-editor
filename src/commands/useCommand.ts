@@ -4,6 +4,7 @@
 
 import { useCallback, useMemo } from 'react';
 import { useStore } from '../state/store';
+import { workspaceController } from '../workspace/useWorkspace';
 import { getCommand, type Command, type CommandContext } from './commands';
 
 export interface UseCommandResult {
@@ -13,15 +14,8 @@ export interface UseCommandResult {
 }
 
 export function useCommand(): UseCommandResult {
-  // We grab refs to store actions through getState() each call so we don't
-  // re-subscribe on every store change. selectedMathBlockCount, on the other
-  // hand, IS a value the registry's `when` predicates care about — read it
-  // off state when building the context.
-  const openPanel  = useStore((s) => s.openPanel);
-  const closePanel = useStore((s) => s.closePanel);
-  const focusPanel = useStore((s) => s.focusPanel);
-  const resetLayout = useStore((s) => s.resetLayout);
-
+  // The workspace controller is module-scoped — it dispatches through
+  // the imperative sidebar toggler that AppShell wires at mount.
   const buildContext = useCallback((): CommandContext => {
     const state = useStore.getState();
     const selectedMathBlockCount = state.selectedIds.filter((id) => {
@@ -33,14 +27,9 @@ export function useCommand(): UseCommandResult {
     return {
       getState: () => useStore.getState(),
       selectedMathBlockCount,
-      workspace: {
-        openPanel,
-        closePanel,
-        focusPanel,
-        resetLayout,
-      },
+      workspace: workspaceController,
     };
-  }, [openPanel, closePanel, focusPanel, resetLayout]);
+  }, []);
 
   const runCommand = useCallback(
     async (id: string) => {
