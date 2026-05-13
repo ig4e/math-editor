@@ -10,6 +10,7 @@ import { DistributionsMode } from './modes/DistributionsMode';
 import { ActivationsMode } from './modes/ActivationsMode';
 import { PCAMode } from './modes/PCAMode';
 import { MLPMode } from './modes/MLPMode';
+import { TrainMode } from './modes/TrainMode';
 
 const ITEMS: readonly TabItem[] = [
   { value: 'regression',    label: 'Regression',        content: <Pad><RegressionMode /></Pad> },
@@ -18,6 +19,7 @@ const ITEMS: readonly TabItem[] = [
   { value: 'activations',   label: 'Activations',       content: <Pad><ActivationsMode /></Pad> },
   { value: 'pca',           label: 'PCA',               content: <Pad><PCAMode /></Pad> },
   { value: 'mlp',           label: 'Neural net',        content: <Pad><MLPMode /></Pad> },
+  { value: 'train',         label: 'Train (TFJS)',      content: <Pad><TrainMode /></Pad> },
 ];
 
 export default function MLLabPanel() {

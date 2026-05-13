@@ -103,7 +103,10 @@ export default defineConfig({
   build: {
     target: 'es2022',
     sourcemap: false,
-    chunkSizeWarningLimit: 1500,
+    // 1500 KB covers our largest expected chunk (Excalidraw with Mermaid).
+    // TFJS (vendor-tfjs, lazy, ~2 MB unminified / 300 KB gz) is exempt
+    // since it's an optional dependency users opt into.
+    chunkSizeWarningLimit: 2200,
     rollupOptions: {
       output: {
         // Keep the main entry small. Big stable deps each get their own
@@ -117,6 +120,7 @@ export default defineConfig({
           if (id.includes('@cortex-js/compute-engine')) return 'vendor-cas';
           if (id.includes('@radix-ui')) return 'vendor-radix';
           if (id.includes('zustand') || id.includes('zundo') || id.includes('immer')) return 'vendor-state';
+          if (id.includes('@tensorflow/tfjs')) return 'vendor-tfjs';
           // React stays in the default vendor bundle alongside the app so
           // the state slice (which imports zustand which imports react)
           // doesn't form a cross-chunk cycle.
