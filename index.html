@@ -1,21 +1,18 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <meta name="theme-color" content="#6366f1" />
+    <meta name="theme-color" content="#1e1e1e" />
     <meta name="description" content="The ultimate math writing sheet — equations, drawings, graphs, AI." />
     <title>Math Notebook</title>
-    <script>
-      // Apply persisted theme before paint to avoid the white flash
-      try {
-        const t = localStorage.getItem('math-sheet:theme');
-        const dark = t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
-        document.documentElement.dataset.theme = dark ? 'dark' : 'light';
-      } catch {}
-    </script>
+    <style>
+      /* Avoid white flash before Vite + Tailwind kick in. Matches
+         --color-app from index.css's dark @theme. */
+      html, body { background: #121212; color: #FCFCFC; }
+    </style>
   </head>
   <body>
     <div id="root"></div>

@@ -1,19 +1,17 @@
-// Canvas panel — hosts Excalidraw with its full native UI. Extension
-// happens via Excalidraw's documented slots:
-//   - MainMenu       → CanvasMainMenu  (math-specific menu items beside theirs)
-//   - renderTopRightUI → CanvasTopRight (+ Math / + Text / theme toggle)
-//   - Footer         → CanvasFooter (active-provider, var-count, ⌘K hint)
-//   - WelcomeScreen  → CanvasWelcome (on empty sheets)
+// Canvas panel — hosts Excalidraw with its full native UI. Math and
+// text blocks live as real Excalidraw `embeddable` elements (NOT a
+// React overlay): their position, size, drag, zoom, scroll, select,
+// undo, delete are all owned by Excalidraw natively.
 //
-// Math blocks + bound-arrow anchors land in P2c (MathOverlay + anchors.ts).
-// inject.ts (programmatic injection from other panels) lands with P2c too.
-//
-// We import Excalidraw's CSS at the panel level so it's part of the
-// canvas-panel chunk, not the main entry.
+// `validateEmbeddable` allow-lists our custom `mathblock://` and
+// `textblock://` link schemes; `renderEmbeddable` renders the React
+// subtree (math-field / contenteditable) inside the element bounds via
+// <BlockEmbed>.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Excalidraw } from '@excalidraw/excalidraw';
 import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
+import type { NonDeleted, ExcalidrawEmbeddableElement } from '@excalidraw/excalidraw/element/types';
 import '@excalidraw/excalidraw/index.css';
 
 import { useStore } from '../../state/store';
@@ -22,27 +20,23 @@ import { CanvasMainMenu } from './CanvasMainMenu';
 import { CanvasTopRight } from './CanvasTopRight';
 import { CanvasFooter } from './CanvasFooter';
 import { CanvasWelcome } from './CanvasWelcome';
-import { MathOverlay } from './MathOverlay';
 import { SelectionToolbar } from './SelectionToolbar';
-import { useAnchorSync } from './anchors';
+import { useEmbeddableSync, isBlockLink, blockIdFromElement } from './anchors';
 import { setExcalidrawAPI } from './inject';
+import { BlockEmbed } from './BlockEmbed';
 
 const SCENE_DEBOUNCE_MS = 250;
 
 export default function CanvasPanel() {
   const activeSheetId = useStore((s) => s.activeSheetId);
   const sheet = useActiveSheet();
-  const theme = useStore((s) => s.theme);
   const setSheetSnapshot = useStore((s) => s.setSheetSnapshot);
 
-  // ExcalidrawImperativeAPI ref — captured via the `excalidrawAPI` prop.
   const apiRef = useRef<ExcalidrawImperativeAPI | null>(null);
 
-  // Bidirectional block ↔ anchor sync.
-  useAnchorSync(apiRef);
+  // Block-as-embeddable sync (was useAnchorSync in v2).
+  useEmbeddableSync(apiRef);
 
-  // `initialData` is read once per sheet mount; flipping sheets needs a
-  // remount, so we use the sheetId as a React key on <Excalidraw>.
   const [initialData] = useState(() => {
     const snap = sheet?.excalidrawSnapshot;
     return snap && typeof snap === 'object'
@@ -50,15 +44,12 @@ export default function CanvasPanel() {
       : undefined;
   });
 
-  // Debounced scene → store snapshot.
   const debounceTimer = useRef<number | null>(null);
   const persistScene = useCallback(() => {
     if (!apiRef.current) return;
     const elements = apiRef.current.getSceneElements();
     const appState = apiRef.current.getAppState();
     const files = apiRef.current.getFiles();
-    // We strip transient appState (selection, viewBackgroundColor on theme
-    // switch) so Ctrl+Z and reloads don't fight each other.
     const snapshot = {
       elements,
       appState: serializeAppState(appState),
@@ -72,11 +63,16 @@ export default function CanvasPanel() {
     debounceTimer.current = window.setTimeout(persistScene, SCENE_DEBOUNCE_MS);
   }, [persistScene]);
 
-  // Final flush on unmount.
   useEffect(() => () => {
     if (debounceTimer.current !== null) window.clearTimeout(debounceTimer.current);
     persistScene();
   }, [persistScene]);
+
+  const renderEmbeddable = useCallback((element: NonDeleted<ExcalidrawEmbeddableElement>) => {
+    const ref = blockIdFromElement(element);
+    if (!ref) return null;
+    return <BlockEmbed blockId={ref.id} type={ref.type} />;
+  }, []);
 
   return (
     <div className="h-full w-full relative">
@@ -85,18 +81,18 @@ export default function CanvasPanel() {
         excalidrawAPI={(api) => { apiRef.current = api; setExcalidrawAPI(api); }}
         initialData={initialData}
         onChange={onChange}
-        theme={theme}
+        theme="dark"
+        validateEmbeddable={isBlockLink}
+        renderEmbeddable={renderEmbeddable}
         renderTopRightUI={() => <CanvasTopRight apiRef={apiRef} />}
         UIOptions={{
-          // We expose our own canvas-level dialog later; let Excalidraw's
-          // canvas-area help-popover stay on (it documents shape shortcuts).
           canvasActions: {
             changeViewBackgroundColor: true,
             clearCanvas: true,
             export: { saveFileToDisk: true },
             loadScene: true,
             saveToActiveFile: true,
-            toggleTheme: false, // our prefsSlice.theme is the source of truth
+            toggleTheme: false, // app is dark-only
             saveAsImage: true,
           },
         }}
@@ -105,7 +101,6 @@ export default function CanvasPanel() {
         <CanvasFooter />
         <CanvasWelcome />
       </Excalidraw>
-      <MathOverlay apiRef={apiRef} />
       <SelectionToolbar apiRef={apiRef} />
     </div>
   );
@@ -113,9 +108,6 @@ export default function CanvasPanel() {
 
 // ----- helpers ---------------------------------------------------------
 
-/** Trim transient appState fields that would otherwise dirty the persist
- *  layer on every cursor wiggle. We keep view (zoom/scroll), grid, and
- *  user-settable defaults. */
 function serializeAppState(s: Record<string, unknown>): Record<string, unknown> {
   const keep = [
     'gridSize', 'viewBackgroundColor', 'scrollX', 'scrollY', 'zoom',

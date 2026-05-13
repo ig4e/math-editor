@@ -1,6 +1,7 @@
 // The right-hand chip cluster that Excalidraw mounts via renderTopRightUI.
 // Sits beside the (collab / live-collab) area in stock Excalidraw — we
-// repurpose it for "add math block" / "add text block" / theme toggle.
+// repurpose it for "add math block" / "add text block". The app is
+// dark-only so there's no theme toggle anymore.
 //
 // Visual style intentionally mirrors Excalidraw's own pill-style buttons
 // so the addition reads as part of the same chrome.
@@ -16,20 +17,15 @@ interface Props {
 }
 
 export function CanvasTopRight({ apiRef }: Props) {
-  const theme = useStore((s) => s.theme);
-  const setTheme = useStore((s) => s.setTheme);
   const addMathBlock = useStore((s) => s.addMathBlock);
   const addTextBlock = useStore((s) => s.addTextBlock);
 
   const placeMathBlock = () => {
-    // Drop the block at the current Excalidraw viewport center. The math
-    // overlay (P2c) reads x/y as scene coords and uses
-    // sceneCoordsToViewportCoords to position the React element.
     const api = apiRef.current;
     if (!api) return;
     const state = api.getAppState();
-    const x = (-state.scrollX + state.width / 2) / state.zoom.value;
-    const y = (-state.scrollY + state.height / 2) / state.zoom.value;
+    const x = (-state.scrollX + state.width / 2) / state.zoom.value - 110;
+    const y = (-state.scrollY + state.height / 2) / state.zoom.value - 28;
     addMathBlock({ x, y });
   };
 
@@ -37,8 +33,8 @@ export function CanvasTopRight({ apiRef }: Props) {
     const api = apiRef.current;
     if (!api) return;
     const state = api.getAppState();
-    const x = (-state.scrollX + state.width / 2) / state.zoom.value;
-    const y = (-state.scrollY + state.height / 2) / state.zoom.value;
+    const x = (-state.scrollX + state.width / 2) / state.zoom.value - 110;
+    const y = (-state.scrollY + state.height / 2) / state.zoom.value - 28;
     addTextBlock({ x, y });
   };
 
@@ -50,21 +46,6 @@ export function CanvasTopRight({ apiRef }: Props) {
       <PillButton label="Add text block (T)" onClick={placeTextBlock}>
         <Icon name="text" /> <span>Text</span>
       </PillButton>
-      <Tooltip label="Toggle theme" shortcut="⌘ ⇧ T">
-        {/* eslint-disable-next-line no-restricted-syntax -- bespoke chrome to mirror Excalidraw's top-right pill cluster */}
-        <button
-          type="button"
-          aria-label="Toggle theme"
-          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-          className={cx(
-            'inline-flex items-center justify-center w-8 h-8 rounded-md',
-            'text-fg-2 hover:bg-surface-2',
-            'transition-colors duration-150 ease-out',
-          )}
-        >
-          <Icon name={theme === 'dark' ? 'sun' : 'moon'} />
-        </button>
-      </Tooltip>
     </div>
   );
 }

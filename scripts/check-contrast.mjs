@@ -1,11 +1,11 @@
 // Color-contrast CI gate. Parses `src/index.css`, extracts every
-// `--color-*` declaration per scope (`@theme { ... }` is light defaults,
-// `[data-theme="dark"] { ... }` is dark overrides), then asserts a
-// curated list of foreground/background pairs meets WCAG AA.
+// `--color-*` declaration. The app is currently dark-only — the
+// `@theme { ... }` block holds the dark tokens. A `[data-theme="dark"]`
+// override block, if present, is layered on top. The script reports
+// each curated pair against the resulting effective token map.
 //
 // We curate the pair list because exhaustive O(n²) checks flag
-// unused combinations as false positives (e.g. `fg-faint` over
-// `accent-bg` is never rendered).
+// unused combinations as false positives.
 //
 // Exit 1 on any pair under threshold. Exit 0 otherwise.
 
@@ -24,9 +24,9 @@ const css = readFileSync(cssPath, 'utf8');
 
 /** @returns {Scopes} */
 function parseScopes(source) {
-  // Light defaults live inside `@theme { ... }`.
-  const lightMatch = source.match(/@theme\s*\{([\s\S]*?)\n\}/);
-  // Dark overrides inside `[data-theme="dark"] { ... }`.
+  // The base tokens live inside `@theme { ... }`.
+  const baseMatch = source.match(/@theme\s*\{([\s\S]*?)\n\}/);
+  // Dark overrides (if any) inside `[data-theme="dark"] { ... }`.
   const darkMatch = source.match(/\[data-theme="dark"\]\s*\{([\s\S]*?)\n\}/);
   const parseBlock = (block) => {
     const map = {};
@@ -35,15 +35,17 @@ function parseScopes(source) {
     while ((m = re.exec(block)) !== null) {
       const name = m[1];
       const val = m[2].trim();
-      // Skip non-hex values (they're not legitimate fg/bg targets here).
       if (!val.startsWith('#')) continue;
       map[name] = val;
     }
     return map;
   };
+  const base = baseMatch ? parseBlock(baseMatch[1]) : {};
+  const darkOverride = darkMatch ? parseBlock(darkMatch[1]) : {};
   return {
-    light: lightMatch ? parseBlock(lightMatch[1]) : {},
-    dark: darkMatch ? parseBlock(darkMatch[1]) : {},
+    // "Effective dark" = base layered with the dark override map. With
+    // the app dark-only, base IS the dark palette.
+    dark: { ...base, ...darkOverride },
   };
 }
 
@@ -99,7 +101,7 @@ const PAIRS = [
 const scopes = parseScopes(css);
 let failures = 0;
 
-for (const scopeName of /** @type {const} */ (['light', 'dark'])) {
+for (const scopeName of /** @type {const} */ (['dark'])) {
   const map = scopes[scopeName];
   for (const { fg, bg, min = 4.5 } of PAIRS) {
     const fgHex = map[fg];

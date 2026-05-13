@@ -69,41 +69,51 @@ const jsxgraph2d: Grapher = {
     let plotted: unknown[] = [];
 
     const apply = (next: GrapherInput) => {
+      // Zustand + immer deep-freezes its state. JSXGraph mutates the
+      // option objects we pass it (e.g. it sets .x on point options
+      // during board construction), which throws "Cannot assign to
+      // read only property" on frozen inputs. Defensive clone before
+      // hand-off.
+      const specs = next.specs.map((s) => structuredClone(s)) as typeof next.specs;
+      const variables = next.variables ? { ...next.variables } : undefined;
+
       board.suspendUpdate();
       for (const obj of plotted) board.removeObject(obj);
       plotted = [];
-      next.specs.forEach((spec, i) => {
+      specs.forEach((spec, i) => {
         const color = (spec as { color?: string }).color ?? PLOT_COLORS[i % PLOT_COLORS.length];
         const baseOpts = { strokeColor: color, strokeWidth: 2, highlight: false, name: spec.kind === 'function' ? spec.label : undefined };
         switch (spec.kind) {
           case 'function': {
-            const f = compileFunction(spec.expression, spec.variable ?? 'x', next.variables);
-            plotted.push(board.create('functiongraph', [f], baseOpts));
+            const f = compileFunction(spec.expression, spec.variable ?? 'x', variables);
+            plotted.push(board.create('functiongraph', [f], { ...baseOpts }));
             break;
           }
           case 'parametric': {
-            const fx = compileFunction(spec.xExpression, spec.parameter ?? 't', next.variables);
-            const fy = compileFunction(spec.yExpression, spec.parameter ?? 't', next.variables);
-            plotted.push(board.create('curve', [fx, fy, spec.tMin ?? -10, spec.tMax ?? 10], baseOpts));
+            const fx = compileFunction(spec.xExpression, spec.parameter ?? 't', variables);
+            const fy = compileFunction(spec.yExpression, spec.parameter ?? 't', variables);
+            plotted.push(board.create('curve', [fx, fy, spec.tMin ?? -10, spec.tMax ?? 10], { ...baseOpts }));
             break;
           }
           case 'implicit': {
-            // JSXGraph 1.7+ has an 'implicitcurve' element. The function
-            // takes (x, y) and we look for the zero level set.
-            const fxy = compileImplicit(spec.expression, next.variables);
-            plotted.push(board.create('implicitcurve', [fxy], baseOpts));
+            const fxy = compileImplicit(spec.expression, variables);
+            plotted.push(board.create('implicitcurve', [fxy], { ...baseOpts }));
             break;
           }
           case 'points': {
-            for (const [x, y] of spec.points) {
+            for (const pt of spec.points) {
+              // `pt` is a tuple from the cloned spec; JSXGraph wants
+              // primitive numbers it can read by index.
+              const x = Number(pt[0]);
+              const y = Number(pt[1]);
               plotted.push(board.create('point', [x, y], { ...baseOpts, fixed: true }));
             }
             break;
           }
           case 'inequality': {
-            const f = compileFunction(spec.expression, 'x', next.variables);
+            const f = compileFunction(spec.expression, 'x', variables);
             plotted.push(board.create('inequality', [
-              board.create('functiongraph', [f], baseOpts),
+              board.create('functiongraph', [f], { ...baseOpts }),
             ], { ...baseOpts, fillColor: color, fillOpacity: 0.15 }));
             break;
           }

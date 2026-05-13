@@ -1,82 +1,97 @@
-// Math/text-block anchors — invisible Excalidraw rectangles that mirror
-// each React block's bounds. This is what makes Excalidraw's native
-// lasso/marquee/move/keyboard-nudge/alignment-guides work on math blocks
-// the same as on shapes.
+// Block-as-embeddable sync. Each math/text block in our store maps to a
+// real Excalidraw `embeddable` element on the scene. The embeddable's
+// `link` field carries `mathblock://<id>` or `textblock://<id>` so the
+// canvas's `renderEmbeddable` callback can dispatch to the right React
+// subtree.
 //
-// Two directions of sync, both wired by useAnchorSync below:
-//   1) block.x/y/size  → anchor element bounds  (when the user edits a
-//                         field or we programmatically move a block)
-//   2) anchor element bounds → block.x/y/size  (when the user drags the
-//                         anchor in Excalidraw)
+// Because the block IS now a real scene element:
+//   - drag / move / zoom / pan / scroll-out-of-viewport all work natively
+//   - delete / copy-paste / group / arrow-bind all work natively
+//   - undo / redo include block creates and moves
 //
-// Anchor elements are tagged with `customData = { kind: 'mathBlockAnchor',
-// blockId, role? }` so we can round-trip them across persist + collab.
+// Two-way sync:
+//   1) block.x/y/w/h in state  →  element.x/y/width/height
+//   2) element.x/y (Excalidraw drag) →  block.x/y
+//
+// Size only flows store → scene during creation; resize from Excalidraw
+// is honoured as a hint and stored back. The block content (latex/text)
+// is the React render — Excalidraw doesn't see it.
 
 import { useEffect, useRef } from 'react';
 import type {
   ExcalidrawElement,
   NonDeleted,
+  ExcalidrawEmbeddableElement,
 } from '@excalidraw/excalidraw/element/types';
 import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
 import { useStore } from '../../state/store';
 import { useActiveSheet } from '../../state/selectors';
 import type { Block } from '../../state/types';
 
-export interface AnchorCustomData {
-  kind: 'mathBlockAnchor';
-  blockId: string;
-  role?: 'source' | 'derived' | 'system-member';
+const DEFAULT_W = 280;
+const DEFAULT_H = 56;
+const TEXT_H = 64;
+
+const MATH_PREFIX = 'mathblock://';
+const TEXT_PREFIX = 'textblock://';
+
+export function blockLink(block: Block): string {
+  return `${block.type === 'math' ? MATH_PREFIX : TEXT_PREFIX}${block.id}`;
 }
 
-/** Default placeholder size if a block hasn't been measured yet. */
-const DEFAULT_W = 240;
-const DEFAULT_H = 48;
+/** Extract a blockId from an embeddable element's `link`, or null if
+ *  the element isn't one of ours. */
+export function blockIdFromElement(el: ExcalidrawElement): { id: string; type: 'math' | 'text' } | null {
+  if (el.type !== 'embeddable') return null;
+  const link = (el as ExcalidrawEmbeddableElement).link;
+  if (!link) return null;
+  if (link.startsWith(MATH_PREFIX)) return { id: link.slice(MATH_PREFIX.length), type: 'math' };
+  if (link.startsWith(TEXT_PREFIX)) return { id: link.slice(TEXT_PREFIX.length), type: 'text' };
+  return null;
+}
 
-/** True when an Excalidraw element is one of our block anchors. */
+/** True if the Excalidraw element is one of our block embeddables. */
 export function isAnchor(el: ExcalidrawElement): boolean {
-  const d = (el as ExcalidrawElement & { customData?: unknown }).customData as AnchorCustomData | undefined;
-  return d?.kind === 'mathBlockAnchor';
+  return blockIdFromElement(el) !== null;
 }
 
 export function anchorBlockId(el: ExcalidrawElement): string | null {
-  const d = (el as ExcalidrawElement & { customData?: unknown }).customData as AnchorCustomData | undefined;
-  return d?.kind === 'mathBlockAnchor' ? d.blockId : null;
+  return blockIdFromElement(el)?.id ?? null;
+}
+
+/** Validator passed to `<Excalidraw validateEmbeddable>` so our custom
+ *  scheme is allowed and the canvas renders the embeddable. */
+export function isBlockLink(link: string): boolean {
+  return link.startsWith(MATH_PREFIX) || link.startsWith(TEXT_PREFIX);
 }
 
 /**
- * useAnchorSync — keeps a 1:1 anchor element on the canvas for every
- * block. Mount this once inside the Canvas panel.
- *
- * The implementation is intentionally cheap: we diff blocks and anchors
- * on each `appState` mutation tick (~250 ms debounced upstream) and call
- * `updateScene({ elements, captureUpdate: 'never' })` to push our deltas
- * — `captureUpdate: 'never'` keeps anchor sync out of Excalidraw's undo
- * stack so Ctrl+Z still feels right.
+ * useEmbeddableSync — keeps a 1:1 embeddable element on the canvas for
+ * every block. Two-way: store position → element, element position →
+ * store. Run from CanvasPanel.
  */
-export function useAnchorSync(
+export function useEmbeddableSync(
   apiRef: React.MutableRefObject<ExcalidrawImperativeAPI | null>,
 ): void {
   const sheet = useActiveSheet();
   const moveBlock = useStore((s) => s.moveBlock);
 
-  // Track the last known block positions we wrote to the canvas, so a
-  // user-side drag (anchor changed → write back to block) doesn't
-  // trigger us re-pushing the same position.
+  // Track last positions we wrote to the canvas so we don't ping-pong.
   const lastWritten = useRef(new Map<string, { x: number; y: number }>());
 
-  // ---- store → anchors ----
+  // store → scene
   useEffect(() => {
     const api = apiRef.current;
     if (!api || !sheet) return;
-    syncAnchorsToBlocks(api, sheet.blocks, lastWritten.current);
+    syncEmbeddablesFromBlocks(api, sheet.blocks, lastWritten.current);
   }, [apiRef, sheet]);
 
-  // ---- anchors → store ----
+  // scene → store
   useEffect(() => {
     const api = apiRef.current;
     if (!api) return;
     const off = api.onChange(() => {
-      pullAnchorsIntoBlocks(api, moveBlock, lastWritten.current);
+      pullEmbeddablePositions(api, moveBlock, lastWritten.current);
     });
     return () => { off(); };
   }, [apiRef, moveBlock]);
@@ -84,7 +99,7 @@ export function useAnchorSync(
 
 // ----- impl ------------------------------------------------------------
 
-function syncAnchorsToBlocks(
+function syncEmbeddablesFromBlocks(
   api: ExcalidrawImperativeAPI,
   blocks: readonly Block[],
   lastWritten: Map<string, { x: number; y: number }>,
@@ -97,25 +112,26 @@ function syncAnchorsToBlocks(
   }
 
   const wanted = new Set(blocks.map((b) => b.id));
+  let needsUpdate = false;
   const next: ExcalidrawElement[] = elements.map((el) => {
     const id = anchorBlockId(el);
     if (!id) return el;
     if (!wanted.has(id)) {
-      // block deleted upstream → mark anchor deleted
+      needsUpdate = true;
       return { ...el, isDeleted: true } as ExcalidrawElement;
     }
     const block = blocks.find((b) => b.id === id);
     if (!block) return el;
     if (el.x === block.x && el.y === block.y) return el;
     lastWritten.set(id, { x: block.x, y: block.y });
+    needsUpdate = true;
     return { ...el, x: block.x, y: block.y } as ExcalidrawElement;
   });
 
-  // Add any blocks that don't yet have an anchor.
-  let needsUpdate = next.some((el, i) => el !== elements[i]);
+  // Add any blocks that don't yet have an embeddable.
   for (const block of blocks) {
     if (byBlockId.has(block.id)) continue;
-    next.push(makeAnchor(block));
+    next.push(makeEmbeddable(block));
     lastWritten.set(block.id, { x: block.x, y: block.y });
     needsUpdate = true;
   }
@@ -128,7 +144,7 @@ function syncAnchorsToBlocks(
   }
 }
 
-function pullAnchorsIntoBlocks(
+function pullEmbeddablePositions(
   api: ExcalidrawImperativeAPI,
   moveBlock: (id: string, x: number, y: number) => void,
   lastWritten: Map<string, { x: number; y: number }>,
@@ -144,41 +160,38 @@ function pullAnchorsIntoBlocks(
   }
 }
 
-function makeAnchor(block: Block): ExcalidrawElement {
-  // We craft a minimal rectangle element. Type purity is sacrificed via
-  // `as ExcalidrawElement` because crafting the entire Excalidraw element
-  // shape inline triples the file size; updateScene tolerates extra fields.
-  const id = `anchor:${block.id}`;
+function makeEmbeddable(block: Block): ExcalidrawElement {
+  const w = DEFAULT_W;
+  const h = block.type === 'text' ? TEXT_H : DEFAULT_H;
+  const id = `block-${block.id}`;
   return {
     id,
-    type: 'rectangle',
+    type: 'embeddable',
     x: block.x,
     y: block.y,
-    width: DEFAULT_W,
-    height: DEFAULT_H,
+    width: w,
+    height: h,
     angle: 0,
     strokeColor: 'transparent',
     backgroundColor: 'transparent',
     fillStyle: 'solid',
-    strokeWidth: 0,
+    strokeWidth: 1,
     strokeStyle: 'solid',
     roughness: 0,
-    opacity: 0,
+    opacity: 100,
     groupIds: [],
     frameId: null,
-    roundness: null,
+    roundness: { type: 3 },
     seed: hashId(id),
     versionNonce: 0,
     isDeleted: false,
     boundElements: null,
     updated: 1,
-    link: null,
+    link: blockLink(block),
     locked: false,
-    customData: {
-      kind: 'mathBlockAnchor',
-      blockId: block.id,
-    } as AnchorCustomData,
+    customData: { kind: 'mathBlockAnchor', blockId: block.id, blockType: block.type },
     version: 1,
+    validated: true,
   } as unknown as ExcalidrawElement;
 }
 
@@ -187,3 +200,6 @@ function hashId(s: string): number {
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
   return Math.abs(h);
 }
+
+/** Legacy alias kept for callers that haven't migrated. */
+export const useAnchorSync = useEmbeddableSync;
