@@ -1,7 +1,9 @@
 // Gradient descent / optimizer playground for 1D and 2D loss surfaces.
-// Plots the optimizer path over the loss function.
+// Plots the optimizer path over the loss function and can pin the
+// whole trajectory (image of the loss surface + a chain of arrows in
+// canvas scene coords) onto the Excalidraw canvas.
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { descend1D, descend2D, type DescentPath1D, type DescentPath2D } from '../../../ml/descent';
 import { compileFunction } from '../../../graphers/detectSpec';
 import { compileMulti } from '../../../graphers/compileMulti';
@@ -9,6 +11,8 @@ import type { OptimizerName } from '../../../ml/optimizers';
 import { Card, Field, Input, Select, Button } from '../../../components/common';
 import { Icon } from '../../../components/Icons';
 import { useStore } from '../../../state/store';
+import { injectArrow, injectImage, getExcalidrawAPI } from '../../canvas/inject';
+import { toPng } from 'html-to-image';
 
 const OPTS: { value: OptimizerName; label: string }[] = [
   { value: 'sgd', label: 'SGD' },
@@ -16,6 +20,15 @@ const OPTS: { value: OptimizerName; label: string }[] = [
   { value: 'rmsprop', label: 'RMSprop' },
   { value: 'adam', label: 'Adam' },
 ];
+
+interface PinAdapter {
+  /** SVG element to rasterise. */
+  el: SVGSVGElement;
+  /** Scene-coord projection of one trajectory point onto the
+   *  pinned-image's local coord frame, where origin = image top-left
+   *  and the image fills the box (imgW, imgH). */
+  pointToImageXY(i: number): { x: number; y: number } | null;
+}
 
 export function DescentMode() {
   const [mode, setMode] = useState<'1d' | '2d'>('1d');
@@ -27,6 +40,7 @@ export function DescentMode() {
   const [optimizer, setOptimizer] = useState<OptimizerName>('sgd');
   const addMathBlock = useStore((s) => s.addMathBlock);
   const toast = useStore((s) => s.toast);
+  const adapterRef = useRef<PinAdapter | null>(null);
 
   const result = useMemo<DescentPath1D | DescentPath2D | null>(() => {
     try {
@@ -34,6 +48,67 @@ export function DescentMode() {
       return descend2D({ expr: expr2, x0, y0, optimizer, lr });
     } catch { return null; }
   }, [mode, expr, expr2, x0, y0, optimizer, lr]);
+
+  const pinFinal = () => {
+    if (!result) return;
+    if (mode === '1d') {
+      const r = result as DescentPath1D;
+      const final = r.xs[r.xs.length - 1] ?? NaN;
+      addMathBlock({ x: 220, y: 220, latex: `x^* \\approx ${final.toFixed(6)}` });
+    } else {
+      const r = result as DescentPath2D;
+      const fx = r.xs[r.xs.length - 1] ?? NaN;
+      const fy = r.ys[r.ys.length - 1] ?? NaN;
+      addMathBlock({ x: 220, y: 220, latex: `(x^*, y^*) \\approx (${fx.toFixed(4)},\\ ${fy.toFixed(4)})` });
+    }
+    toast('Final point pinned', 'success');
+  };
+
+  const pinTrajectory = async () => {
+    if (!result) return;
+    const adapter = adapterRef.current;
+    const api = getExcalidrawAPI();
+    if (!adapter || !api) { toast('Canvas not ready', 'warn'); return; }
+    toast('Snapshotting…', 'info');
+    try {
+      // Rasterise the SVG. html-to-image handles inline-SVG → PNG.
+      // html-to-image's toPng typing wants HTMLElement; SVG is supported
+      // at runtime so we widen.
+      const dataURL = await toPng(adapter.el as unknown as HTMLElement, { pixelRatio: 2, backgroundColor: '#ffffff' });
+      // Drop image at the current viewport center.
+      const state = api.getAppState();
+      const imgW = 400;
+      const imgH = Math.round(imgW * (adapter.el.viewBox.baseVal.height / adapter.el.viewBox.baseVal.width));
+      const ox = (-state.scrollX + state.width / 2) / state.zoom.value - imgW / 2;
+      const oy = (-state.scrollY + state.height / 2) / state.zoom.value - imgH / 2;
+      injectImage({ at: { x: ox, y: oy }, dataURL, width: imgW, height: imgH });
+
+      // Compute scene-coord trajectory positions from the image's local
+      // 0..imgW × 0..imgH frame and inject arrows between consecutive
+      // points. Each arrow is one undo step (capture:'capture' default).
+      const N = result.xs.length;
+      const vbW = adapter.el.viewBox.baseVal.width;
+      const vbH = adapter.el.viewBox.baseVal.height;
+      let prev: { x: number; y: number } | null = null;
+      for (let i = 0; i < N; i++) {
+        const local = adapter.pointToImageXY(i);
+        if (!local) continue;
+        const sceneX = ox + (local.x / vbW) * imgW;
+        const sceneY = oy + (local.y / vbH) * imgH;
+        if (prev) {
+          injectArrow({
+            from: prev,
+            to: { x: sceneX, y: sceneY },
+            color: i === N - 1 ? '#dc2626' : '#6366f1',
+          });
+        }
+        prev = { x: sceneX, y: sceneY };
+      }
+      toast(`Trajectory pinned (${N - 1} arrows)`, 'success');
+    } catch (e) {
+      toast(`Pin failed: ${(e as Error).message}`, 'error');
+    }
+  };
 
   return (
     <div className="flex flex-col gap-3">
@@ -86,26 +161,19 @@ export function DescentMode() {
           title="Trajectory"
           tone="accent"
           titleActions={
-            <Button size="sm" variant="ghost" onClick={() => {
-              if (mode === '1d') {
-                const r = result as DescentPath1D;
-                const final = r.xs[r.xs.length - 1] ?? NaN;
-                addMathBlock({ x: 220, y: 220, latex: `x^* \\approx ${final.toFixed(6)}` });
-              } else {
-                const r = result as DescentPath2D;
-                const fx = r.xs[r.xs.length - 1] ?? NaN;
-                const fy = r.ys[r.ys.length - 1] ?? NaN;
-                addMathBlock({ x: 220, y: 220, latex: `(x^*, y^*) \\approx (${fx.toFixed(4)},\\ ${fy.toFixed(4)})` });
-              }
-              toast('Pinned to canvas', 'success');
-            }}>
-              <Icon name="plus" /> Pin
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button size="sm" variant="ghost" onClick={pinFinal}>
+                <Icon name="plus" /> Pin final
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => void pinTrajectory()}>
+                <Icon name="link" /> Pin trajectory
+              </Button>
+            </div>
           }
         >
           {mode === '1d'
-            ? <Plot1D result={result as DescentPath1D} expr={expr} />
-            : <Plot2D result={result as DescentPath2D} expr={expr2} />}
+            ? <Plot1D result={result as DescentPath1D} expr={expr} adapterRef={adapterRef} />
+            : <Plot2D result={result as DescentPath2D} expr={expr2} adapterRef={adapterRef} />}
           <div className="text-xs text-fg-muted mt-2">
             optimizer={optimizer} · lr={lr} · {result.xs.length} steps
           </div>
@@ -115,7 +183,8 @@ export function DescentMode() {
   );
 }
 
-function Plot1D({ result, expr }: { result: DescentPath1D; expr: string }) {
+function Plot1D({ result, expr, adapterRef }: { result: DescentPath1D; expr: string; adapterRef: React.MutableRefObject<PinAdapter | null> }) {
+  const svgRef = useRef<SVGSVGElement | null>(null);
   const f = compileFunction(expr, 'x');
   const xs = result.xs;
   const xMin = Math.min(...xs, -1) - 1;
@@ -134,8 +203,25 @@ function Plot1D({ result, expr }: { result: DescentPath1D; expr: string }) {
   const sy = (y: number) => H - 10 - ((y - yMin) / ySpan) * (H - 20);
   const curve = samples.map((p, i) => `${i === 0 ? 'M' : 'L'} ${sx(p.x)} ${sy(p.y)}`).join(' ');
   const path = result.xs.map((x, i) => `${i === 0 ? 'M' : 'L'} ${sx(x)} ${sy(result.ys[i]!)}`).join(' ');
+
+  // Expose pin-time projection.
+  const ref = (node: SVGSVGElement | null) => {
+    svgRef.current = node;
+    if (node) {
+      adapterRef.current = {
+        el: node,
+        pointToImageXY: (i) => {
+          const x = result.xs[i], y = result.ys[i];
+          if (x === undefined || y === undefined) return null;
+          return { x: sx(x), y: sy(y) };
+        },
+      };
+    }
+  };
+
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-72" preserveAspectRatio="none">
+    <svg ref={ref} viewBox={`0 0 ${W} ${H}`} className="w-full h-72" preserveAspectRatio="none">
+      <rect x={0} y={0} width={W} height={H} fill="#ffffff" />
       <path d={curve} fill="none" stroke="var(--color-fg-2)" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
       <path d={path} fill="none" stroke="var(--color-accent)" strokeWidth="2" vectorEffect="non-scaling-stroke" />
       {result.xs.map((x, i) => (
@@ -145,7 +231,8 @@ function Plot1D({ result, expr }: { result: DescentPath1D; expr: string }) {
   );
 }
 
-function Plot2D({ result, expr }: { result: DescentPath2D; expr: string }) {
+function Plot2D({ result, expr, adapterRef }: { result: DescentPath2D; expr: string; adapterRef: React.MutableRefObject<PinAdapter | null> }) {
+  const svgRef = useRef<SVGSVGElement | null>(null);
   const f = compileMulti(expr);
   const xs = result.xs;
   const ys = result.ys;
@@ -154,8 +241,6 @@ function Plot2D({ result, expr }: { result: DescentPath2D; expr: string }) {
   const yMin = Math.min(...ys) - 1;
   const yMax = Math.max(...ys) + 1;
 
-  // Compute contour-ish background by sampling f on a grid + coloring
-  // each cell by intensity.
   const grid = 40;
   const cells: { x: number; y: number; v: number }[] = [];
   let vMin = Infinity, vMax = -Infinity;
@@ -179,8 +264,23 @@ function Plot2D({ result, expr }: { result: DescentPath2D; expr: string }) {
   const cw = (W - 20) / grid;
   const ch = (H - 20) / grid;
 
+  const ref = (node: SVGSVGElement | null) => {
+    svgRef.current = node;
+    if (node) {
+      adapterRef.current = {
+        el: node,
+        pointToImageXY: (i) => {
+          const x = result.xs[i], y = result.ys[i];
+          if (x === undefined || y === undefined) return null;
+          return { x: sx(x), y: sy(y) };
+        },
+      };
+    }
+  };
+
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-80" preserveAspectRatio="none">
+    <svg ref={ref} viewBox={`0 0 ${W} ${H}`} className="w-full h-80" preserveAspectRatio="none">
+      <rect x={0} y={0} width={W} height={H} fill="#ffffff" />
       {cells.map((c, idx) => {
         const t = (c.v - vMin) / vSpan;
         const intensity = Math.round(255 * Math.max(0, Math.min(1, 1 - t)));
