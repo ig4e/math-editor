@@ -1,6 +1,6 @@
 // Sheets / tabs slice — owns the multi-sheet workspace, the active sheet,
 // the active sheet's view (pan/zoom), and bulk operations like clear and
-// import-from-JSON (which act on sheets and so live here).
+// import-from-JSON.
 
 import type { AppSlice } from '../store';
 import type { Sheet, View } from '../types';
@@ -21,6 +21,9 @@ export interface SheetsSlice {
   // view
   setView: (v: Partial<View>) => void;
   resetView: () => void;
+
+  // per-sheet Excalidraw scene snapshot (Phase 2 writes via canvasPanel)
+  setSheetSnapshot: (id: string, snapshot: unknown) => void;
 
   // bulk
   clearActiveSheet: () => void;
@@ -46,7 +49,6 @@ export const createSheetsSlice: AppSlice<SheetsSlice> = (set) => ({
 
   removeSheet: (id) => set((s) => {
     if (s.sheetOrder.length === 1) {
-      // never end up with zero sheets — reset to a single blank one
       const next = newSheet('Sheet 1');
       delete s.sheets[id];
       s.sheets[next.id] = next;
@@ -59,7 +61,8 @@ export const createSheetsSlice: AppSlice<SheetsSlice> = (set) => ({
     delete s.sheets[id];
     s.sheetOrder.splice(idx, 1);
     if (s.activeSheetId === id) {
-      s.activeSheetId = s.sheetOrder[Math.max(0, idx - 1)];
+      const fallback = s.sheetOrder[Math.max(0, idx - 1)];
+      if (fallback) s.activeSheetId = fallback;
       s.selectedIds = [];
     }
   }),
@@ -86,23 +89,28 @@ export const createSheetsSlice: AppSlice<SheetsSlice> = (set) => ({
   // -------- view --------
   setView: (v) => set((s) => {
     const sh = s.sheets[s.activeSheetId];
-    sh.view = { ...sh.view, ...v };
+    if (sh) sh.view = { ...sh.view, ...v };
   }),
   resetView: () => set((s) => {
-    s.sheets[s.activeSheetId].view = { panX: 0, panY: 0, zoom: 1 };
+    const sh = s.sheets[s.activeSheetId];
+    if (sh) sh.view = { panX: 0, panY: 0, zoom: 1 };
+  }),
+
+  // -------- snapshot --------
+  setSheetSnapshot: (id, snapshot) => set((s) => {
+    const sh = s.sheets[id];
+    if (sh) sh.excalidrawSnapshot = snapshot;
   }),
 
   // -------- bulk --------
   clearActiveSheet: () => set((s) => {
     const sh = s.sheets[s.activeSheetId];
+    if (!sh) return;
     sh.blocks = [];
-    sh.strokes = [];
-    sh.shapes = [];
-    sh.links = [];
+    sh.excalidrawSnapshot = undefined;
     sh.view = { panX: 0, panY: 0, zoom: 1 };
     s.selectedIds = [];
     s.activeMathBlockId = null;
-    s.linkPendingFrom = null;
   }),
 
   replaceFromJSON: (data) => set((s) => {
@@ -111,16 +119,6 @@ export const createSheetsSlice: AppSlice<SheetsSlice> = (set) => ({
       s.sheets = d.sheets;
       s.sheetOrder = d.sheetOrder;
       s.activeSheetId = d.activeSheetId;
-      s.selectedIds = [];
-      return;
-    }
-    // Legacy single-sheet import — wrap into a new sheet
-    const single = data as Sheet;
-    if (single && single.blocks && single.strokes && single.view) {
-      const sh: Sheet = { ...single, id: newSheet().id, name: single.name || 'Imported' };
-      s.sheets[sh.id] = sh;
-      s.sheetOrder.push(sh.id);
-      s.activeSheetId = sh.id;
       s.selectedIds = [];
     }
   }),

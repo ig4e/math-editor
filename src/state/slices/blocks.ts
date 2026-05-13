@@ -19,6 +19,7 @@ export const createBlocksSlice: AppSlice<BlocksSlice> = (set) => ({
     const id = uid();
     set((s) => {
       const sh = s.sheets[s.activeSheetId];
+      if (!sh) return;
       const block: MathBlock = {
         id,
         type: 'math',
@@ -39,6 +40,7 @@ export const createBlocksSlice: AppSlice<BlocksSlice> = (set) => ({
     const id = uid();
     set((s) => {
       const sh = s.sheets[s.activeSheetId];
+      if (!sh) return;
       const block: TextBlock = {
         id,
         type: 'text',
@@ -56,18 +58,21 @@ export const createBlocksSlice: AppSlice<BlocksSlice> = (set) => ({
   },
 
   updateBlock: (id, patch) => set((s) => {
-    const b = s.sheets[s.activeSheetId].blocks.find((b) => b.id === id);
+    const sh = s.sheets[s.activeSheetId];
+    const b = sh?.blocks.find((b) => b.id === id);
     if (!b) return;
     Object.assign(b, patch);
   }),
 
   moveBlock: (id, x, y) => set((s) => {
-    const b = s.sheets[s.activeSheetId].blocks.find((b) => b.id === id);
+    const sh = s.sheets[s.activeSheetId];
+    const b = sh?.blocks.find((b) => b.id === id);
     if (b) { b.x = x; b.y = y; }
   }),
 
   deleteBlock: (id) => set((s) => {
     const sh = s.sheets[s.activeSheetId];
+    if (!sh) return;
     sh.blocks = sh.blocks.filter((b) => b.id !== id);
     s.selectedIds = s.selectedIds.filter((x) => x !== id);
     if (s.activeMathBlockId === id) s.activeMathBlockId = null;
@@ -75,15 +80,16 @@ export const createBlocksSlice: AppSlice<BlocksSlice> = (set) => ({
 
   duplicateBlock: (id) => set((s) => {
     const sh = s.sheets[s.activeSheetId];
-    const b = sh.blocks.find((b) => b.id === id);
-    if (!b) return;
+    const b = sh?.blocks.find((b) => b.id === id);
+    if (!sh || !b) return;
     const copy: Block = { ...b, id: uid(), x: b.x + 30, y: b.y + 30 };
     sh.blocks.push(copy);
     s.selectedIds = [copy.id];
   }),
 
   setShowNote: (id, on) => set((s) => {
-    const b = s.sheets[s.activeSheetId].blocks.find((b) => b.id === id);
+    const sh = s.sheets[s.activeSheetId];
+    const b = sh?.blocks.find((b) => b.id === id);
     if (b) b.showNote = on;
   }),
 });
