@@ -30,6 +30,10 @@ export interface PrefsState {
 
   /** "Don't show first-run onboarding again". */
   onboardingDismissed: boolean;
+
+  /** Bigger tap targets for stylus / touch input. Defaults true on
+   *  pointer-coarse devices. The user can override either way. */
+  tabletMode: boolean;
 }
 
 export interface PrefsActions {
@@ -41,6 +45,7 @@ export interface PrefsActions {
   setDefaultProvider(provider: string | null, model: string | null): void;
   dismissInstallBanner(): void;
   dismissOnboarding(): void;
+  setTabletMode(v: boolean): void;
 }
 
 export type PrefsSlice = PrefsState & PrefsActions;
@@ -56,6 +61,7 @@ export const createPrefsSlice: AppSlice<PrefsSlice> = (set) => ({
   defaultModel: null,
   installBannerDismissed: false,
   onboardingDismissed: false,
+  tabletMode: typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches,
 
   setTheme: (t) =>
     set((s) => {
@@ -98,5 +104,10 @@ export const createPrefsSlice: AppSlice<PrefsSlice> = (set) => ({
   dismissOnboarding: () =>
     set((s) => {
       s.onboardingDismissed = true;
+    }),
+
+  setTabletMode: (v) =>
+    set((s) => {
+      s.tabletMode = v;
     }),
 });

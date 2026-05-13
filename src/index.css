@@ -154,6 +154,22 @@
     content: attr(data-placeholder);
     color: var(--color-fg-faint);
   }
+
+  /* Tablet mode — when `<html data-tablet-mode="true">` is set, every
+     interactive surface grows to a 44 px minimum tap target. Excalidraw
+     handles its own touch + palm-rejection natively, so we only have
+     to widen our own chrome. */
+  html[data-tablet-mode="true"] button,
+  html[data-tablet-mode="true"] [role="button"],
+  html[data-tablet-mode="true"] [role="menuitem"],
+  html[data-tablet-mode="true"] input:not([type="checkbox"]):not([type="radio"]),
+  html[data-tablet-mode="true"] select,
+  html[data-tablet-mode="true"] textarea {
+    min-height: 44px;
+  }
+  html[data-tablet-mode="true"] .text-xs {
+    font-size: 13px;
+  }
 }
 
 /* ------------------------------------------------------------------

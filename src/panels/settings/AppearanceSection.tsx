@@ -17,9 +17,11 @@ export function AppearanceSection() {
   const theme       = useStore((s) => s.theme);
   const themeAuto   = useStore((s) => s.themeAuto);
   const fontScale   = useStore((s) => s.fontScale);
+  const tabletMode  = useStore((s) => s.tabletMode);
   const setTheme     = useStore((s) => s.setTheme);
   const setThemeAuto = useStore((s) => s.setThemeAuto);
   const setFontScale = useStore((s) => s.setFontScale);
+  const setTabletMode = useStore((s) => s.setTabletMode);
 
   // While themeAuto is on, mirror the OS preference into prefsSlice.theme
   // so the rest of the app (and our Excalidraw theme prop) sees a single
@@ -73,6 +75,17 @@ export function AppearanceSection() {
             ariaLabel="Font scale"
             className="w-60"
           />
+        )}
+      </Field>
+
+      <Field label="Tablet / stylus mode" inline rightSlot={
+        <Switch checked={tabletMode} onCheckedChange={setTabletMode} ariaLabel="Tablet mode" />
+      }>
+        {() => (
+          <div className="text-xs text-fg-muted">
+            Grows buttons / inputs to 44 px tap targets. Auto-enabled on
+            <code className="text-fg-2"> pointer: coarse </code> devices.
+          </div>
         )}
       </Field>
     </div>

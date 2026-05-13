@@ -44,6 +44,14 @@ export default function App() {
     return () => { document.documentElement.style.fontSize = ''; };
   }, [fontScale]);
 
+  // Mirror tablet mode to <html data-tablet-mode="true"> — index.css
+  // upsizes interactive elements when set.
+  const tabletMode = useStore((s) => s.tabletMode);
+  useEffect(() => {
+    if (tabletMode) document.documentElement.setAttribute('data-tablet-mode', 'true');
+    else document.documentElement.removeAttribute('data-tablet-mode');
+  }, [tabletMode]);
+
   // On boot, if the URL hash carries a share payload, apply it.
   // Then, on a true first run, seed the welcome blocks.
   useEffect(() => {
