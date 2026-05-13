@@ -1,3 +1,7 @@
+// Thin wrapper around the <math-field> custom element.
+// Keeps the latex value in sync via a ref (we don't pass it as a child
+// because React would fight math-field's internal text node on updates).
+
 import { useEffect, useRef } from 'react';
 import type { MathfieldElement } from 'mathlive';
 import type { MathBlock as MathBlockData } from '../state/types';
@@ -9,49 +13,25 @@ interface Props {
   onFocus: () => void;
   onBlur: () => void;
   onEvaluateRequest: () => void;
-  /** Receives the live element so the parent can call .getValue / .insert. */
-  registerRef: (el: MathfieldElement | null) => void;
 }
 
 export function MathBlock({
-  block,
-  fontSizePx,
-  onChange,
-  onFocus,
-  onBlur,
-  onEvaluateRequest,
-  registerRef,
+  block, fontSizePx, onChange, onFocus, onBlur, onEvaluateRequest,
 }: Props) {
   const ref = useRef<MathfieldElement>(null);
 
-  // Sync external latex changes into the element. We compare current
-  // .value to avoid clobbering the user's cursor as they type.
+  // Push external latex changes in without clobbering the cursor.
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     if (el.value !== block.latex) el.value = block.latex;
   }, [block.latex]);
 
-  useEffect(() => {
-    registerRef(ref.current);
-    return () => registerRef(null);
-  }, [registerRef]);
-
-  // Initial latex is pushed in via the useEffect above — JSX child is empty
-  // so React doesn't fight math-field's internal text node when value changes.
   return (
     <math-field
-      ref={ref as any}
-      style={{
-        display: 'block',
-        fontSize: `${fontSizePx}px`,
-        border: 'none',
-        outline: 'none',
-        background: 'transparent',
-      }}
-      onInput={(e: React.SyntheticEvent<MathfieldElement>) => {
-        onChange(e.currentTarget.value);
-      }}
+      ref={ref}
+      style={{ display: 'block', fontSize: `${fontSizePx}px` }}
+      onInput={(e) => onChange((e.currentTarget as MathfieldElement).value)}
       onFocus={onFocus}
       onBlur={onBlur}
       onKeyDown={(e) => {
