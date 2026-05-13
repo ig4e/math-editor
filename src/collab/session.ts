@@ -82,6 +82,22 @@ export function startCollab(opts: {
   // Wire bidirectional sync — see ./sync.ts.
   bindToStore(active);
 
+  // Wire Excalidraw scene sync. The binding polls for the canvas to
+  // mount before subscribing to onChange.
+  let unbindScene: (() => void) | null = null;
+  void import('./excalidrawBinding').then(({ bindExcalidrawScene }) => {
+    if (active && active.roomId === opts.roomId) {
+      unbindScene = bindExcalidrawScene(active);
+    }
+  });
+
+  // Tear down the binding on session destroy.
+  const realDestroy = active.destroy.bind(active);
+  active.destroy = () => {
+    if (unbindScene) unbindScene();
+    realDestroy();
+  };
+
   return active;
 }
 
