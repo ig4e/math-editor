@@ -10,14 +10,24 @@
 // offline. `MathfieldElement.fontsDirectory` is set to `/fonts` in
 // src/main.tsx. The PWA precaches *.woff2 via globPatterns so a service
 // worker hit also serves them without a network round-trip.
+//
+// Workspace layout note: the editor lives at apps/editor and the repo
+// root is two levels up. Deployment configs (vercel.json, wrangler.toml)
+// expect the build output at the root `dist/`, so we point Vite's
+// outDir back up — this keeps the deploy contract unchanged after the
+// monorepo move.
 
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import { readFileSync, readdirSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { join, dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = resolve(__dirname, '../..');
 
 /** Vite plugin: copy mathlive's bundled woff2 fonts into `dist/fonts/`.
  *  We resolve the package's install location via require.resolve so this
@@ -108,6 +118,8 @@ export default defineConfig({
   build: {
     target: 'es2022',
     sourcemap: false,
+    outDir: resolve(REPO_ROOT, 'dist'),
+    emptyOutDir: true,
     // Bundle size isn't a blocking concern for this app — every heavy
     // dep is already lazy-loaded and the deploy targets serve from
     // edge CDNs with effective Brotli compression. Set a high warning

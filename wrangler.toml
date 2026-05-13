@@ -8,4 +8,4 @@ pages_build_output_dir = "dist"
 # Default: anything matching /api/* is served by a Pages Function; everything
 # else falls back to the static SPA (index.html).
 [build]
-command = "npm run build:cf"
+command = "pnpm build:cf"

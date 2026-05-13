@@ -21,10 +21,11 @@ import { build } from 'esbuild';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
+const EDITOR_SRC = join(ROOT, 'apps', 'editor', 'src');
 
 // 1. Bundle templates.ts so we can import it from Node.
 const result = await build({
-  entryPoints: [join(ROOT, 'src', 'panels', 'canvas', 'templates.ts')],
+  entryPoints: [join(EDITOR_SRC, 'panels', 'canvas', 'templates.ts')],
   bundle: true,
   format: 'esm',
   platform: 'node',
@@ -121,7 +122,7 @@ const library = {
   libraryItems,
 };
 
-const outDir = join(ROOT, 'public');
+const outDir = join(ROOT, 'apps', 'editor', 'public');
 if (!existsSync(outDir)) mkdirSync(outDir, { recursive: true });
 const outPath = join(outDir, 'math-templates.excalidrawlib');
 writeFileSync(outPath, JSON.stringify(library, null, 2));

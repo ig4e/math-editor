@@ -1,5 +1,5 @@
-// Color-contrast CI gate. Parses `src/index.css`, extracts every
-// `--color-*` declaration. The app is currently dark-only — the
+// Color-contrast CI gate. Parses `apps/editor/src/index.css`, extracts
+// every `--color-*` declaration. The app is currently dark-only — the
 // `@theme { ... }` block holds the dark tokens. A `[data-theme="dark"]`
 // override block, if present, is layered on top. The script reports
 // each curated pair against the resulting effective token map.
@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const cssPath = join(__dirname, '..', 'src', 'index.css');
+const cssPath = join(__dirname, '..', 'apps', 'editor', 'src', 'index.css');
 const css = readFileSync(cssPath, 'utf8');
 
 // ---- 1. extract tokens per scope ----------------------------------------
