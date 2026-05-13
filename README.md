@@ -1,114 +1,218 @@
-# Math Sheet
+# Math Notebook
 
-A simple, single-page whiteboard for writing math by keyboard — no LaTeX
-fluency required. Built on [MathLive](https://mathlive.io) and the
-[Cortex Compute Engine](https://mathlive.io/compute-engine/).
+A best-in-class **math notebook** that runs in the browser. Free for end
+users, offline-first, bring-your-own-key for AI. Built on Excalidraw,
+MathLive, the Cortex Compute Engine, JSXGraph, three.js, Pyodide, and
+the Vercel AI SDK.
 
-No build step, no framework, no dependencies to install. Works as a static site
-on GitHub Pages.
+A dockable workspace where every feature is a tab: canvas, solver,
+variables, 2D + 3D graphing, AI chat, notes, reference, inspector,
+matrix, numerics, ML lab, settings.
 
-## What it does
+> v1 was a vanilla-JS single-page whiteboard on `main`. **v2 is the
+> branch you want**: 50 commits ahead of `main`, every roadmap phase
+> shipped, every previously-deferred item closed. See
+> [`docs/transformation-complete.md`](./docs/transformation-complete.md)
+> for the full audit trail.
 
-- **Type math without LaTeX.** Click `Math`, start typing. `/` makes a fraction,
-  `^` a superscript, `sqrt` becomes √, etc. Hit the keyboard icon on the field
-  to bring up the on-screen math keyboard on mobile or whenever your fingers
-  forget what's where.
-- **Free-form whiteboard.** Drag blocks anywhere. Drag empty space to pan.
-  Scroll (or pinch) to zoom. Drop multiple equations and arrange them however
-  you'd explain it on paper.
-- **Color highlights.** Select part of an equation and click a color swatch to
-  recolor it (`\textcolor`). The highlight icon next to the swatches puts a
-  colored box around the selection (`\colorbox`) — handy for marking the
-  discriminant, a substitution, etc.
-- **Margin notes.** Every block has a hidden italic note slot you can open
-  with the pencil icon. Good for the "we did this because…" comments.
-- **Numbered references.** Each equation gets a `(1)`, `(2)`, `(3)` label
-  automatically. Click a label to copy the reference to your clipboard so you
-  can paste *"plug into (2)…"* into a text block.
-- **Freehand pen + eraser.** Switch to the pen tool to scribble arrows, circle
-  steps, draw whatever you want over the sheet. Strokes live in world
-  coordinates so they stay attached to nearby equations when you pan/zoom.
-  The eraser tool deletes a stroke on click.
-- **Evaluate / solve.** Select an expression (or a whole equation) and hit the
-  `Solve` button — or `Ctrl/Cmd+Enter` while typing — and the result lands in
-  a new block right below the source:
-  - `4 + 5` → `9`
-  - `\sin(\pi/4)` → `\frac{\sqrt{2}}{2}`
-  - `x - 2 = 8` → `x = 10`
-  - `x^{2} - 5x + 6 = 0` → `x = 2,\quad x = 3`
-- **Autosave.** Everything you do is saved to `localStorage` and restored on
-  reload.
-- **Save / open files.** Download the sheet as a `.mathsheet` JSON file, or
-  open one you saved before.
-- **Export PNG.** Best-effort raster of the current sheet (Chrome works best;
-  Safari's `foreignObject` support is patchy).
+## Highlights
 
-## Keyboard shortcuts
+- **Canvas** — Excalidraw as the universal visual layer. Math blocks
+  live as anchors so lasso / marquee / move / align all work natively
+  on a mix of math and shapes. Selection-floating toolbar surfaces
+  Solve / Solve system / Graph / Ask AI directly above the selection.
+- **Solver + Variables** — compute-engine + mathsteps with step-by-step
+  rewrites; the Variables panel detects every `name = number` in your
+  sheet and exposes a live slider. System solve draws bound arrows from
+  sources to result.
+- **Graph 2D (JSXGraph)** — `f(x)`, parametric, implicit, intersections,
+  roots, extrema. Sliders from Variables bind to the board.
+- **Graph 3D (three.js + @react-three/fiber + drei)** — surfaces,
+  parametric surfaces, parametric curves, vector fields, point clouds.
+  Pin a snapshot to the canvas.
+- **AI + BYOK** — Anthropic, OpenAI, Google, xAI, Mistral, Groq + a
+  generic OpenAI-compatible adapter for DeepSeek / Qwen / Moonshot /
+  Zhipu / Ollama / LM Studio / vLLM / OpenRouter / Together / Fireworks.
+  Keys live in IndexedDB encrypted with WebCrypto AES-GCM. Optional
+  server-side proxy mode for keys-never-leave-server deployments and
+  for Mistral (no browser CORS).
+- **Notes** — markdown with `python` fenced code blocks that run
+  against Pyodide inline, output captured below.
+- **Reference + Inspector** — searchable formula sheet; MathJSON AST
+  viewer for any selected block.
+- **Sharing + exports** — share-link (gzipped sheet baked into the URL
+  hash, no server), Markdown, LaTeX, PDF with rendered math glyphs.
+- **Pyodide + SymPy** — lazy 10 MB Python kernel cached in IDB after
+  first use. Drives `∫ x sin(x) dx`-style symbolic step solving and the
+  Matrix panel's Symbolic mode (eigvals / LU / QR / char-poly with
+  exact surds + step trace).
+- **Wolfram** — edge-function CORS proxy + AI tool + a free
+  "open in Wolfram Alpha" command that needs no key.
+- **Realtime collab** — Yjs over y-webrtc. Sync covers math/text blocks
+  AND the full Excalidraw scene (custom binding). Peer cursors live in
+  the canvas footer.
+- **Handwriting OCR** — lasso a sketch, "Convert to math", a vision LLM
+  transcribes to LaTeX.
+- **Matrix panel** — det / inverse / transpose / rank / RREF (with
+  steps) / eigenvalues / LU / QR. Symbolic toggle routes through
+  Pyodide-SymPy for exact results.
+- **Numerics panel** — Newton's, Bisection, Secant, Euler, RK4,
+  Trapezoid, Simpson, FFT, Gradient descent. Iteration tables +
+  convergence chart.
+- **ML Lab** — Regression / Gradient descent / Distributions /
+  Activations / PCA / Neural net forward pass / Train (TFJS, lazy,
+  optional dependency). Pin descent trajectories as a chain of arrows
+  over the loss surface.
+- **Curriculum-aware** — AP Calc AB/BC, IB SL/HL, A-Level Further
+  Maths, US Common Core HS, GRE Math, custom. Drives the Reference
+  filter, the AI system prompt, and the practice generator command.
+- **Command palette + keybinds** — `Cmd+K` finds every action;
+  Settings → Keybinds rebinds anything, with platform-aware defaults
+  and conflict detection.
 
-| Key | Action |
-|---|---|
-| `E` | Add math block |
-| `T` | Add text block |
-| `V` / `P` / `X` | Move / Pen / Eraser tool |
-| `+` `−` `0` | Zoom in / out / reset |
-| `Ctrl+Enter` (in a math-field) | Evaluate / solve selection |
-
-## Running locally
-
-It's a static site, so you just need any local web server (file:// won't work
-because MathLive uses strict CORS):
+## Quick start
 
 ```sh
-# Python 3
-python -m http.server 8000
-
-# Node
-npx serve .
+npm install
+npm run dev
 ```
 
-Then open <http://localhost:8000>.
+Opens at <http://localhost:5173>. No keys or env vars required — math
+editing, solving, graphing, sharing, PDF / Markdown / LaTeX export, and
+realtime collab all work out of the box. AI features stay disabled
+until you paste a key in **Settings → API keys**.
 
-## Deploying to GitHub Pages
+## Other scripts
 
-1. Push this repo to GitHub.
-2. Settings → Pages → Source: `main` branch, `/` (root).
-3. Visit `https://<user>.github.io/<repo>/`. The `.nojekyll` file in this repo
-   tells Pages to serve the files as-is without Jekyll processing.
+```sh
+npm run typecheck     # tsc -b --noEmit
+npm run lint          # eslint flat config
+npm run check:contrast # WCAG AA gate over the @theme tokens
+npm test              # vitest + jsdom (34 tests)
+npm run build         # full prod build + bundle gate
+npm run build:cf      # build + emit functions/api for Cloudflare
+npm run preview       # serve dist/ at :4173
+```
 
-## Files
+The CI pipeline gates `typecheck → lint → check:contrast → test → build`
+before any deploy job runs.
+
+## Architecture, in one sentence
+
+Every long-lived concern is either **state** (one Zustand store with
+seven slices, persisted to IndexedDB), a **registry record** (Panel /
+Command / Keybind), or a **backend** (Solver / Grapher / AI provider).
+Adding a feature means adding to one of those — never wiring a new prop
+tree.
 
 ```
-index.html   — markup, toolbar, inline SVG icons, CDN script tags
-styles.css   — layout + theme
-app.js       — all the logic (~700 lines, vanilla JS)
-.nojekyll    — GH Pages config
+src/
+├── workspace/      flexlayout host + PanelRegistry
+├── panels/         12 panel folders — canvas, solver, variables,
+│                   graph, graph3d, ai, notes, reference, inspector,
+│                   matrix, numerics, mllab, settings
+├── commands/       palette + registry + bootstrap + templates + practice
+├── keybinds/       editor + defaults + tinykeys runtime
+├── solvers/        registry + computeEngine + mathsteps + wolfram
+│   └── pyodide/    loader + sympy + matrix (symbolic ops bridge)
+├── graphers/       2D (JSXGraph) + 3D (three + R3F) backends
+├── ml/             regression, optimizers, descent, pca, distributions
+├── ai/             providers + chat + proxyStream + tools + OCR + BYOK
+├── share/          url + markdown + latex + pdf (MathLive → image)
+├── collab/         Yjs session + Excalidraw scene binding
+├── onboarding/     welcome seeds + tour + spotlight
+├── state/          store + slices + IDB persist
+├── components/     common/ (18 design-system primitives) + Toaster + ConfirmDialog + Icons
+├── hooks/
+├── vendor/         selectively forked excalidraw-app + jsxgraph CSS
+└── utils/
+
+api/                edge functions (Cloudflare + Vercel; one file, two exports)
+  ├── hello.ts · wolfram.ts · ai-proxy.ts
+public/             manifest + math-templates.excalidrawlib + fonts (MathLive)
+scripts/            check-bundle, check-contrast, emit-library, build-cf-functions
+docs/               17 markdown files documenting every layer
 ```
 
-That's it. No package.json, no build, no npm install.
+Drill-down: [`docs/architecture.md`](./docs/architecture.md).
 
-## How it works (briefly)
+## Deploying
 
-- A `.world` div is transformed with `translate + scale` for pan/zoom.
-- Blocks are absolutely-positioned divs inside `.world` (CSS transforms apply).
-- Strokes are SVG `<path>`s in an overlay also inside `.world`, so they pan
-  and zoom along with the blocks.
-- Math blocks embed `<math-field>` (MathLive web component). The selection
-  API (`mf.getValue('selection', 'latex')` + `mf.insert('\\textcolor{…}{#@}')`)
-  is what powers the color/highlight buttons.
-- The evaluate button parses the selected LaTeX with
-  `MathfieldElement.computeEngine.parse(latex)`, then either calls
-  `expr.solve(expr.unknowns)` (when the root operator is `Equal`) or
-  `expr.simplify().N()` for plain arithmetic.
+Cloudflare Pages and Vercel from the same repo, same `api/*.ts` files,
+same `dist/`. Pick either or run both.
 
-## Caveats
+- [`docs/deploy-cloudflare.md`](./docs/deploy-cloudflare.md)
+- [`docs/deploy-vercel.md`](./docs/deploy-vercel.md)
 
-- PNG export depends on `<foreignObject>` rendering Web Components and HTML
-  with their inline styles. Chrome handles it; Safari may render math blocks
-  blank. The JSON `Save` works everywhere.
-- The compute engine is loaded from a separate CDN script after MathLive — if
-  evaluate doesn't respond, refresh and try again once the page is fully
-  loaded.
+Default secrets:
+
+| Var | When needed |
+|---|---|
+| `WOLFRAM_APPID` | Wolfram features |
+| `ENABLE_AI_PROXY=1` + `AI_PROXY_ALLOWED_ORIGINS` + at least one `*_API_KEY` | server-side AI proxy mode (and the only path for Mistral) |
+
+No vars are required for a fully-working deploy — AI runs from the
+browser via BYOK and Wolfram features stay disabled until the AppID is
+set.
+
+## Offline
+
+The PWA precaches every chunk + MathLive's woff2 fonts. Sheets persist
+to IndexedDB. Pyodide downloads 10 MB on first use and caches forever.
+AI chat / Wolfram / OCR detect offline and surface in-panel banners.
+
+Details: [`docs/offline-mode.md`](./docs/offline-mode.md).
+
+## Bring your own AI key
+
+Paste a key in **Settings → API keys**, verify with a one-click ping,
+pick a default model. Keys are encrypted at rest with WebCrypto AES-GCM
+and never leave the browser unless you opt in to the server-side proxy.
+Full provider matrix + OpenAI-compatible escape hatch in
+[`docs/ai-byok.md`](./docs/ai-byok.md).
+
+## Realtime collab
+
+Cmd+K → "Start collab session". A `#room=<id>` URL is copied to your
+clipboard; anyone you share it with joins the same Yjs document over
+y-webrtc. Math blocks, text blocks, AND the Excalidraw scene sync
+peer-to-peer. No server beyond the public signaling.
+
+## Tech stack
+
+| Concern | Library |
+|---|---|
+| Workspace | `flexlayout-react` |
+| Command palette / keybinds | `cmdk` + `tinykeys` |
+| Canvas | `@excalidraw/excalidraw` (+ a selective fork of `excalidraw-app`) |
+| Math editor + CAS | `mathlive` + `@cortex-js/compute-engine` + `mathsteps` |
+| Graphing | `jsxgraph` (2D), `three` + `@react-three/fiber` + `@react-three/drei` (3D) |
+| Numerics + ML primitives | `ml-matrix`, `ml-pca`, `simple-statistics` |
+| Optional in-browser autograd | `@tensorflow/tfjs` (lazy, optional) |
+| Python kernel | `pyodide` (lazy) |
+| AI | `ai` (Vercel AI SDK) + `@ai-sdk/{anthropic,openai,google,xai,mistral,groq}` |
+| State | `zustand` + `immer` + `zundo` (undo) + `idb-keyval` (persist) |
+| Realtime collab | `yjs` + `y-webrtc` |
+| Styling | `tailwindcss` (v4) |
+| Dialogs / popovers | Radix UI primitives |
+| PWA | `vite-plugin-pwa` |
+| Build | `vite` (v6), TypeScript 5.7, React 19 |
+
+## Contributing
+
+[`docs/contributing.md`](./docs/contributing.md) — file budget,
+"everything goes through a registry" rules, the `no-restricted-syntax`
+lint rule that blocks raw `<button>` outside `components/common/`, the
+contrast gate, commit conventions.
+
+Adding things:
+
+- [`docs/adding-a-panel.md`](./docs/adding-a-panel.md)
+- [`docs/adding-an-ai-provider.md`](./docs/adding-an-ai-provider.md)
+- [`docs/adding-a-solver-backend.md`](./docs/adding-a-solver-backend.md)
 
 ## License
 
-Do whatever you want with it.
+Do whatever you want with it. Third-party libraries keep their own
+licenses; see [`NOTICE`](./NOTICE) for the selectively-forked
+Excalidraw attribution.
