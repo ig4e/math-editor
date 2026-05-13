@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Math Editor</title>
+    <script type="module" src="https://unpkg.com/mathlive?module"></script>
+    <style>
+      :root {
+        color-scheme: light;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica,
+          Arial, sans-serif;
+        background: #f7f7f5;
+        color: #1f1f1f;
+      }
+
+      main {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 2rem 1rem 3rem;
+      }
+
+      h1 {
+        margin: 0 0 1rem;
+        font-size: 1.6rem;
+      }
+
+      p {
+        margin: 0 0 1rem;
+      }
+
+      math-field {
+        width: 100%;
+        min-height: 65vh;
+        display: block;
+        padding: 1rem;
+        border-radius: 12px;
+        border: 1px solid #d8d8d3;
+        background: #ffffff;
+        font-size: 1.35rem;
+        line-height: 1.45;
+      }
+
+      math-field:focus-within {
+        border-color: #3a82f7;
+        box-shadow: 0 0 0 3px rgba(58, 130, 247, 0.16);
+        outline: none;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Math Editor</h1>
+      <p>Type natural text and math in one large writing area.</p>
+      <math-field
+        id="editor"
+        virtual-keyboard-mode="onfocus"
+        smart-mode
+        menu-items="default"
+      >
+      </math-field>
+    </main>
+  </body>
+</html>
