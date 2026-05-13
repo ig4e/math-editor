@@ -1,19 +1,124 @@
-// Stub for the Canvas panel. Phase 2 replaces this with the vendored
-// excalidraw-app shell + the math overlay + anchors.
+// Canvas panel — hosts Excalidraw with its full native UI. Extension
+// happens via Excalidraw's documented slots:
+//   - MainMenu       → CanvasMainMenu  (math-specific menu items beside theirs)
+//   - renderTopRightUI → CanvasTopRight (+ Math / + Text / theme toggle)
+//   - Footer         → CanvasFooter (active-provider, var-count, ⌘K hint)
+//   - WelcomeScreen  → CanvasWelcome (on empty sheets)
+//
+// Math blocks + bound-arrow anchors land in P2c (MathOverlay + anchors.ts).
+// inject.ts (programmatic injection from other panels) lands with P2c too.
+//
+// We import Excalidraw's CSS at the panel level so it's part of the
+// canvas-panel chunk, not the main entry.
 
-import { PanelHeader, EmptyState } from '../../components/common';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Excalidraw } from '@excalidraw/excalidraw';
+import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
+import '@excalidraw/excalidraw/index.css';
+
+import { useStore } from '../../state/store';
+import { useActiveSheet } from '../../state/selectors';
+import { CanvasMainMenu } from './CanvasMainMenu';
+import { CanvasTopRight } from './CanvasTopRight';
+import { CanvasFooter } from './CanvasFooter';
+import { CanvasWelcome } from './CanvasWelcome';
+
+const SCENE_DEBOUNCE_MS = 250;
 
 export default function CanvasPanel() {
+  const activeSheetId = useStore((s) => s.activeSheetId);
+  const sheet = useActiveSheet();
+  const theme = useStore((s) => s.theme);
+  const setSheetSnapshot = useStore((s) => s.setSheetSnapshot);
+
+  // ExcalidrawImperativeAPI ref — captured via the `excalidrawAPI` prop.
+  const apiRef = useRef<ExcalidrawImperativeAPI | null>(null);
+
+  // `initialData` is read once per sheet mount; flipping sheets needs a
+  // remount, so we use the sheetId as a React key on <Excalidraw>.
+  const [initialData] = useState(() => {
+    const snap = sheet?.excalidrawSnapshot;
+    return snap && typeof snap === 'object'
+      ? (snap as Record<string, unknown>)
+      : undefined;
+  });
+
+  // Debounced scene → store snapshot.
+  const debounceTimer = useRef<number | null>(null);
+  const persistScene = useCallback(() => {
+    if (!apiRef.current) return;
+    const elements = apiRef.current.getSceneElements();
+    const appState = apiRef.current.getAppState();
+    const files = apiRef.current.getFiles();
+    // We strip transient appState (selection, viewBackgroundColor on theme
+    // switch) so Ctrl+Z and reloads don't fight each other.
+    const snapshot = {
+      elements,
+      appState: serializeAppState(appState),
+      files,
+    };
+    setSheetSnapshot(activeSheetId, snapshot);
+  }, [activeSheetId, setSheetSnapshot]);
+
+  const onChange = useCallback(() => {
+    if (debounceTimer.current !== null) window.clearTimeout(debounceTimer.current);
+    debounceTimer.current = window.setTimeout(persistScene, SCENE_DEBOUNCE_MS);
+  }, [persistScene]);
+
+  // Final flush on unmount.
+  useEffect(() => () => {
+    if (debounceTimer.current !== null) window.clearTimeout(debounceTimer.current);
+    persistScene();
+  }, [persistScene]);
+
   return (
-    <div className="flex flex-col h-full bg-canvas">
-      <PanelHeader title="Canvas" icon="cursor" />
-      <div className="flex-1">
-        <EmptyState
-          icon="palette"
-          title="Canvas coming in Phase 2"
-          description="The Excalidraw integration lands here — vendored chrome from excalidraw-app, the math overlay, and the bound-arrow anchors for system solves."
-        />
-      </div>
+    <div className="h-full w-full relative">
+      <Excalidraw
+        key={activeSheetId}
+        excalidrawAPI={(api) => { apiRef.current = api; }}
+        initialData={initialData}
+        onChange={onChange}
+        theme={theme}
+        renderTopRightUI={() => <CanvasTopRight apiRef={apiRef} />}
+        UIOptions={{
+          // We expose our own canvas-level dialog later; let Excalidraw's
+          // canvas-area help-popover stay on (it documents shape shortcuts).
+          canvasActions: {
+            changeViewBackgroundColor: true,
+            clearCanvas: true,
+            export: { saveFileToDisk: true },
+            loadScene: true,
+            saveToActiveFile: true,
+            toggleTheme: false, // our prefsSlice.theme is the source of truth
+            saveAsImage: true,
+          },
+        }}
+      >
+        <CanvasMainMenu />
+        <CanvasFooter />
+        <CanvasWelcome />
+      </Excalidraw>
     </div>
   );
+}
+
+// ----- helpers ---------------------------------------------------------
+
+/** Trim transient appState fields that would otherwise dirty the persist
+ *  layer on every cursor wiggle. We keep view (zoom/scroll), grid, and
+ *  user-settable defaults. */
+function serializeAppState(s: Record<string, unknown>): Record<string, unknown> {
+  const keep = [
+    'gridSize', 'viewBackgroundColor', 'scrollX', 'scrollY', 'zoom',
+    'currentItemStrokeColor', 'currentItemBackgroundColor',
+    'currentItemFillStyle', 'currentItemStrokeWidth',
+    'currentItemRoughness', 'currentItemOpacity', 'currentItemFontFamily',
+    'currentItemFontSize', 'currentItemTextAlign', 'currentItemRoundness',
+    'currentItemArrowType', 'currentItemEndArrowhead', 'currentItemStartArrowhead',
+  ];
+  const out: Record<string, unknown> = {};
+  for (const k of keep) {
+    if (k in s) out[k] = s[k];
+  }
+  return out;
 }
