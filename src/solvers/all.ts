@@ -11,3 +11,6 @@ import './computeEngine';
 import './mathsteps';
 // Wolfram is online-only; runner filters it out unless allowOnline=true.
 import './wolfram';
+// Pyodide-SymPy is lazy — registration is light; the heavy kernel only
+// loads on the first invoke().
+import './pyodide/sympy';

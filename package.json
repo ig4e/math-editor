@@ -47,6 +47,7 @@
     "nanoid": "^5.1.11",
     "pako": "^2.1.0",
     "perfect-freehand": "^1.2.3",
+    "pyodide": "^0.29.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "three": "^0.184.0",
