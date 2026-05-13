@@ -11,6 +11,7 @@ import { useActiveSheet } from '../../state/selectors';
 import { PanelHeader, PanelStatus, IconButton } from '../../components/common';
 import { cx } from '../../utils/cx';
 import { PyodideCodeBlock } from './PyodideCodeBlock';
+import { renderInlineMath } from './renderMath';
 
 export default function NotesPanel() {
   const sheet = useActiveSheet();
@@ -34,7 +35,8 @@ export default function NotesPanel() {
   // Walk the lexer output. Contiguous non-python runs render as one
   // dangerouslySetInnerHTML block (keeps semantics identical to the
   // pre-walker version for the 99% case); ```python``` blocks become
-  // a <PyodideCodeBlock> React subtree.
+  // a <PyodideCodeBlock> React subtree. Inline + display math wrapped
+  // in $..$ / $$..$$ inside non-python runs are rendered via KaTeX.
   const rendered = useMemo(() => {
     try {
       const tokens = marked.lexer(draft);
@@ -42,7 +44,11 @@ export default function NotesPanel() {
       let buf: Tokens.Generic[] = [];
       const flush = () => {
         if (buf.length === 0) return;
-        const html = marked.parser(buf as never) as string;
+        let html = marked.parser(buf as never) as string;
+        // Render KaTeX math inside the produced HTML. We only walk text
+        // nodes via a regex pass; this preserves marked's inline HTML
+        // / link / code-span handling.
+        html = pipeMath(html);
         parts.push({ kind: 'html', payload: html });
         buf = [];
       };
@@ -114,4 +120,44 @@ export default function NotesPanel() {
       </PanelStatus>
     </div>
   );
+}
+
+/** Replace inline `$...$` and display `$$...$$` LaTeX inside marked-
+ *  produced HTML with KaTeX-rendered markup. Skips text nested in
+ *  <pre>, <code>, and inline `<code>` so markdown code samples aren't
+ *  accidentally interpreted as math. */
+function pipeMath(html: string): string {
+  // Tokenise into preserved-HTML segments and renderable text. We
+  // detect tags with a lightweight scanner; inside a tag that we
+  // shouldn't touch (pre / code) we passthrough until the closer.
+  const SKIP_TAGS = new Set(['pre', 'code', 'script', 'style']);
+  let out = '';
+  let i = 0;
+  let skipUntil: string | null = null;
+  while (i < html.length) {
+    const ch = html[i]!;
+    if (ch === '<') {
+      const closeIdx = html.indexOf('>', i);
+      if (closeIdx === -1) { out += html.slice(i); break; }
+      const tag = html.slice(i, closeIdx + 1);
+      out += tag;
+      const inner = tag.slice(1, -1).trim();
+      const closing = inner.startsWith('/');
+      const name = (closing ? inner.slice(1) : inner.split(/[\s>]/)[0]!).toLowerCase();
+      if (skipUntil) {
+        if (closing && name === skipUntil) skipUntil = null;
+      } else if (!closing && SKIP_TAGS.has(name) && !tag.endsWith('/>')) {
+        skipUntil = name;
+      }
+      i = closeIdx + 1;
+      continue;
+    }
+    if (skipUntil) { out += ch; i++; continue; }
+    // Read until the next `<`.
+    const next = html.indexOf('<', i);
+    const chunk = next === -1 ? html.slice(i) : html.slice(i, next);
+    out += renderInlineMath(chunk);
+    i = next === -1 ? html.length : next;
+  }
+  return out;
 }

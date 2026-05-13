@@ -29,12 +29,14 @@ import { seedWelcomeIfFresh } from './onboarding/welcome';
 import { useStore } from './state/store';
 import { useThemeSync }      from './hooks/useThemeSync';
 import { useToastLifecycle } from './hooks/useToastLifecycle';
+import { usePrewarm }        from './hooks/usePrewarm';
 import { applyShareFromHash } from './share/loader';
 
 export default function App() {
   useThemeSync();
   useToastLifecycle();
   useKeybinds();
+  usePrewarm();
 
   // Reflect the prefs fontScale onto the root, so MathLive + chrome
   // resize together.

@@ -59,10 +59,9 @@
     "yjs": "^13.6.30",
     "zod": "^4.4.3",
     "zundo": "^2.3.0",
-    "zustand": "^5.0.3"
-  },
-  "optionalDependencies": {
-    "@tensorflow/tfjs": "^4.22.0"
+    "zustand": "^5.0.3",
+    "@tensorflow/tfjs": "^4.22.0",
+    "katex": "^0.16.10"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.0",
