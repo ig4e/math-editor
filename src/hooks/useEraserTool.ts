@@ -1,6 +1,6 @@
-// Eraser gesture: drag over strokes to delete them. Uses distance hit-test
-// instead of fragile path click events (the previous approach often missed
-// thin strokes).
+// Eraser gesture: drag-erase over any mark (strokes, shapes, links).
+// Distance-based hit-tests delegate to each slice so the eraser hits the
+// thing closest under the cursor.
 
 import { useCallback, useRef, type RefObject } from 'react';
 import { useStore } from '../state/store';
@@ -16,9 +16,14 @@ export function useEraserTool(viewportRef: RefObject<HTMLDivElement | null>) {
   const eraseAtClient = useCallback((clientX: number, clientY: number) => {
     if (!viewportRef.current) return;
     const rect = viewportRef.current.getBoundingClientRect();
-    const view = useStore.getState().sheets[useStore.getState().activeSheetId].view;
+    const s = useStore.getState();
+    const view = s.sheets[s.activeSheetId].view;
     const [wx, wy] = screenToWorld(view, rect, clientX, clientY);
-    useStore.getState().eraseAt([wx, wy], ERASER_PX / view.zoom);
+    const tol = ERASER_PX / view.zoom;
+    // Hit-test strokes → shapes → links, in that visual stacking order.
+    s.eraseAt([wx, wy], tol)
+      || s.eraseShapeAt([wx, wy], tol)
+      || s.eraseLinkAt([wx, wy], tol);
   }, [viewportRef]);
 
   const onPointerDown = useCallback((e: React.PointerEvent) => {

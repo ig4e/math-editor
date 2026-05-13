@@ -9,7 +9,7 @@ import { useEraserTool } from '../hooks/useEraserTool';
 import { cx } from '../utils/cx';
 
 import { Block } from './Block/Block';
-import { StrokeLayer } from './StrokeLayer';
+import { MarksLayer } from './MarksLayer';
 
 interface Props {
   onEvaluateRequest: () => void;
@@ -49,7 +49,7 @@ export function Whiteboard({ onEvaluateRequest, viewportRef }: Props) {
           transform: `translate3d(${sheet.view.panX}px, ${sheet.view.panY}px, 0)`,
         }}
       >
-        <StrokeLayer />
+        <MarksLayer />
         <div className="absolute left-0 top-0">
           {sheet.blocks.map((b) => (
             <Block

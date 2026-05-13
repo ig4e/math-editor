@@ -3,13 +3,14 @@
 // math-field (so selection-based actions like color/highlight work).
 
 import type { ColorName } from '../../state/types';
-import { AddBlockGroup }     from './AddBlockGroup';
-import { ToolGroupButtons }  from './ToolGroupButtons';
-import { SolveButton }       from './SolveButton';
-import { ColorPalette }      from './ColorPalette';
-import { ZoomGroup }         from './ZoomGroup';
-import { FileGroup }         from './FileGroup';
-import { ThemeGroup }        from './ThemeGroup';
+import { AddBlockGroup }      from './AddBlockGroup';
+import { ToolGroupButtons }   from './ToolGroupButtons';
+import { FeatureToggleGroup } from './FeatureToggleGroup';
+import { SolveButton }        from './SolveButton';
+import { ColorPalette }       from './ColorPalette';
+import { ZoomGroup }          from './ZoomGroup';
+import { FileGroup }          from './FileGroup';
+import { ThemeGroup }         from './ThemeGroup';
 
 export interface ToolbarProps {
   onAddMath: () => void;
@@ -17,6 +18,7 @@ export interface ToolbarProps {
   onHighlight: () => void;
   onColorPicked: (name: ColorName) => void;
   onSolve: () => void;
+  onSimplify: () => void;
   onZoomIn: () => void;
   onZoomOut: () => void;
   onResetView: () => void;
@@ -43,7 +45,8 @@ export function Toolbar(p: ToolbarProps) {
     >
       <AddBlockGroup onAddMath={p.onAddMath} onAddText={p.onAddText} />
       <ToolGroupButtons />
-      <SolveButton onSolve={p.onSolve} />
+      <FeatureToggleGroup />
+      <SolveButton onSolve={p.onSolve} onSimplify={p.onSimplify} />
       <ColorPalette onColorPicked={p.onColorPicked} onHighlight={p.onHighlight} />
       <ZoomGroup
         onZoomIn={p.onZoomIn}

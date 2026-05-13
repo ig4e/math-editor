@@ -3,12 +3,13 @@
 
 import { useCallback, useRef } from 'react';
 
-import { Toolbar }       from './components/Toolbar/Toolbar';
-import { TabBar }        from './components/TabBar';
-import { Toaster }       from './components/Toaster';
-import { Whiteboard }    from './components/Whiteboard';
-import { SelectionHint } from './components/SelectionHint';
-import { IconSprite }    from './components/Icons';
+import { Toolbar }         from './components/Toolbar/Toolbar';
+import { TabBar }          from './components/TabBar';
+import { Toaster }         from './components/Toaster';
+import { Whiteboard }      from './components/Whiteboard';
+import { SelectionHint }   from './components/SelectionHint';
+import { VariablesPanel }  from './components/VariablesPanel';
+import { IconSprite }      from './components/Icons';
 
 import { useStore } from './state/store';
 import { useThemeSync }         from './hooks/useThemeSync';
@@ -35,8 +36,10 @@ export default function App() {
   useFirstRunStarter(viewportRef);
 
   // ----- imperative actions ---------------------------------------------
-  const onSolve = useSolveAction(activeMathFieldRef);
-  const file    = useFileIO(viewportRef, fileInputRef);
+  const runSolver  = useSolveAction(activeMathFieldRef);
+  const onSolve    = useCallback(() => runSolver('solve'),    [runSolver]);
+  const onSimplify = useCallback(() => runSolver('simplify'), [runSolver]);
+  const file       = useFileIO(viewportRef, fileInputRef);
 
   const addMathAtCenter = useCallback(() => {
     const [x, y] = centerOfViewport(viewportRef.current);
@@ -110,6 +113,7 @@ export default function App() {
         onHighlight={onHighlight}
         onColorPicked={onColorPicked}
         onSolve={onSolve}
+        onSimplify={onSimplify}
         onZoomIn={() => onZoom(1.2)}
         onZoomOut={() => onZoom(1 / 1.2)}
         onResetView={() => useStore.getState().resetView()}
@@ -126,6 +130,7 @@ export default function App() {
           viewportRef={viewportRef}
         />
         <SelectionHint />
+        <VariablesPanel />
       </main>
       <Toaster />
       <input

@@ -6,7 +6,8 @@ export type IconName =
   | 'highlight' | 'eval' | 'zoom-in' | 'zoom-out' | 'home'
   | 'download' | 'folder' | 'image' | 'trash' | 'note'
   | 'copy' | 'close' | 'sun' | 'moon' | 'check' | 'warn'
-  | 'info' | 'x-square' | 'resize' | 'help';
+  | 'info' | 'x-square' | 'resize' | 'help'
+  | 'wand' | 'link' | 'steps';
 
 export function IconSprite() {
   return (
@@ -38,6 +39,9 @@ export function IconSprite() {
         <symbol id="i-x-square" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 9l6 6M15 9l-6 6"/></symbol>
         <symbol id="i-resize" viewBox="0 0 24 24"><path d="M20 14v6h-6M14 20l6-6M10 4H4v6M4 4l6 6"/></symbol>
         <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 0 1 5 0c0 1.5-2.5 2-2.5 4M12 17v.1" strokeWidth="2"/></symbol>
+        <symbol id="i-wand" viewBox="0 0 24 24"><path d="M4 20 L13 11 M14 5l1 2 2 1-2 1-1 2-1-2-2-1 2-1z M19 13l.6 1.4 1.4.6-1.4.6L19 17l-.6-1.4L17 15l1.4-.6z"/></symbol>
+        <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1.5 1.5 M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1.5-1.5"/></symbol>
+        <symbol id="i-steps" viewBox="0 0 24 24"><path d="M4 18h4v-4H4zM10 14h4v-4h-4zM16 10h4V6h-4z"/></symbol>
       </defs>
     </svg>
   );

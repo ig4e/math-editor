@@ -15,6 +15,8 @@
     "html-to-image": "^1.11.13",
     "immer": "^10.1.1",
     "mathlive": "^0.105.0",
+    "nanoid": "^5.1.11",
+    "perfect-freehand": "^1.2.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "zustand": "^5.0.3"

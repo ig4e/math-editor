@@ -6,15 +6,26 @@ import { useSelectedBlocks, useSelectedMathBlocks } from '../state/selectors';
 import { Icon } from './Icons';
 
 export function SelectionHint() {
-  const tool       = useStore((s) => s.tool);
-  const selected   = useSelectedBlocks();
-  const mathChosen = useSelectedMathBlocks();
+  const tool        = useStore((s) => s.tool);
+  const autoShape   = useStore((s) => s.autoShape);
+  const linkPending = useStore((s) => s.linkPendingFrom);
+  const selected    = useSelectedBlocks();
+  const mathChosen  = useSelectedMathBlocks();
 
   const lines: string[] = [];
-  if (tool === 'pen')    lines.push('Pen — drag to draw');
-  if (tool === 'eraser') lines.push('Eraser — drag over strokes to remove');
+  if (tool === 'pen') {
+    lines.push(autoShape
+      ? 'Pen + auto-shape — sketches get cleaned up'
+      : 'Pen — drag to draw');
+  }
+  if (tool === 'eraser') lines.push('Eraser — drag over marks/links to remove');
+  if (tool === 'link') {
+    lines.push(linkPending
+      ? 'Pick another block to link'
+      : 'Click a block to start linking');
+  }
   if (mathChosen.length >= 2) {
-    lines.push(`${mathChosen.length} equations linked — Solve will solve as a system`);
+    lines.push(`${mathChosen.length} equations selected — Solve will solve as a system`);
   } else if (selected.length > 0) {
     lines.push(`${selected.length} selected`);
   }

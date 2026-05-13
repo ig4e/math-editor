@@ -1,12 +1,13 @@
-// Pen-tool gesture: creates a stroke on pointerdown, extends on move.
-// Used by the pen-capture overlay that sits above blocks (which is why pen
-// drawing wins over the math-field UI underneath).
+// Pen-tool gesture: creates a stroke on pointerdown, extends on move,
+// and (when autoShape is on) runs the recognizer on completion — replacing
+// the freehand stroke with a clean parametric shape if recognition succeeds.
 
 import { useCallback, useRef, type RefObject } from 'react';
 import { useStore } from '../state/store';
 import { COLOR_HEX } from '../utils/colors';
 import { screenToWorld } from '../utils/geom';
 import { uid } from '../state/helpers';
+import { recognize } from '../utils/recognizer';
 
 export function usePenTool(viewportRef: RefObject<HTMLDivElement | null>) {
   const activeStrokeId = useRef<string | null>(null);
@@ -22,7 +23,7 @@ export function usePenTool(viewportRef: RefObject<HTMLDivElement | null>) {
     const stroke = {
       id: uid(),
       color: COLOR_HEX[useStore.getState().colorName],
-      width: 2, // world units; scales naturally with zoom
+      width: 2,
       points: [[round(wx), round(wy)] as [number, number]],
     };
     useStore.getState().addStroke(stroke);
@@ -40,7 +41,22 @@ export function usePenTool(viewportRef: RefObject<HTMLDivElement | null>) {
   }, [viewportRef]);
 
   const onPointerUp = useCallback(() => {
+    const id = activeStrokeId.current;
     activeStrokeId.current = null;
+    if (!id) return;
+
+    const s = useStore.getState();
+    if (!s.autoShape) return;
+
+    const sheet = s.sheets[s.activeSheetId];
+    const stroke = sheet.strokes.find((st) => st.id === id);
+    if (!stroke) return;
+
+    const shape = recognize(stroke);
+    if (shape) {
+      s.replaceStrokeWithShape(id, shape);
+      s.toast(`Recognized: ${shape.kind}`, 'info');
+    }
   }, []);
 
   return { onPointerDown, onPointerMove, onPointerUp };

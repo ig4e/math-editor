@@ -31,6 +31,10 @@ export function Block({
   const setSelection    = useStore((s) => s.setSelection);
   const toggleSelected  = useStore((s) => s.toggleSelected);
   const setActiveMathId = useStore((s) => s.setActiveMathBlockId);
+  const linkPending     = useStore((s) => s.linkPendingFrom);
+  const setLinkPending  = useStore((s) => s.setLinkPendingFrom);
+  const addLink         = useStore((s) => s.addLink);
+  const toast           = useStore((s) => s.toast);
 
   // Position & font-size in screen pixels. Zoom is baked in here, NOT via
   // a CSS scale — that's the whole point of the crisp-zoom architecture.
@@ -40,8 +44,25 @@ export function Block({
 
   const resizeHandlers = useBlockResize(block.id);
 
-  // Click on the body selects the block (without entering drag mode).
+  // Click on the body — behavior depends on the active tool:
+  //   move : single-click selects, modifier-click extends selection
+  //   link : first click sets source, second click creates the link
   const onBodyDown = useCallback((e: React.PointerEvent) => {
+    if (tool === 'link') {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!linkPending) {
+        setLinkPending(block.id);
+        toast('Pick another block to link', 'info');
+      } else if (linkPending === block.id) {
+        setLinkPending(null);
+      } else {
+        addLink(linkPending, block.id);
+        setLinkPending(null);
+        toast('Linked', 'success');
+      }
+      return;
+    }
     if (tool !== 'move') return;
     if (e.shiftKey || e.ctrlKey || e.metaKey) {
       toggleSelected(block.id);
@@ -49,7 +70,8 @@ export function Block({
     } else if (!selected) {
       setSelection([block.id]);
     }
-  }, [tool, block.id, selected, toggleSelected, setSelection]);
+  }, [tool, block.id, selected, toggleSelected, setSelection,
+      linkPending, setLinkPending, addLink, toast]);
 
   return (
     <div

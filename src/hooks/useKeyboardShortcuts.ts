@@ -27,6 +27,7 @@ export function useKeyboardShortcuts(b: Bindings) {
         case 'v': case 'V': s.setTool('move');   break;
         case 'p': case 'P': s.setTool('pen');    break;
         case 'x': case 'X': s.setTool('eraser'); break;
+        case 'l': case 'L': s.setTool('link');   break;
         case '0':           s.resetView();       break;
         case '+': case '=': b.zoomIn();          break;
         case '-':           b.zoomOut();         break;

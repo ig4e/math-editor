@@ -1,8 +1,11 @@
 // Pure helpers used by multiple slices.
 
+import { nanoid } from 'nanoid';
 import type { Sheet, Stroke } from './types';
+import { segDistSq } from '../utils/shapeGeom';
 
-export const uid = (): string => Math.random().toString(36).slice(2, 10);
+/** Short, unguessable, URL-safe ID. */
+export const uid = (): string => nanoid(10);
 
 export function newSheet(name = 'Sheet 1'): Sheet {
   return {
@@ -10,40 +13,40 @@ export function newSheet(name = 'Sheet 1'): Sheet {
     name,
     blocks: [],
     strokes: [],
+    shapes: [],
+    links: [],
     view: { panX: 0, panY: 0, zoom: 1 },
   };
 }
 
-// ----- stroke geometry (used by eraseAt) ----------------------------
+/** Backfill defaults onto a Sheet that may have been persisted before
+ *  shapes/links existed. Used by the persist migration. */
+export function backfillSheet(s: Partial<Sheet> & { id: string; name: string }): Sheet {
+  return {
+    id: s.id,
+    name: s.name,
+    blocks: s.blocks ?? [],
+    strokes: s.strokes ?? [],
+    shapes: s.shapes ?? [],
+    links: s.links ?? [],
+    view: s.view ?? { panX: 0, panY: 0, zoom: 1 },
+  };
+}
+
+// ----- stroke hit-test (drag-erase) ---------------------------------
 export function strokeHitsPoint(
   s: Stroke,
-  [px, py]: [number, number],
+  pt: [number, number],
   tolerance: number,
 ): boolean {
   const t2 = tolerance * tolerance;
   const pts = s.points;
   if (pts.length === 1) {
     const [ax, ay] = pts[0];
-    return (ax - px) ** 2 + (ay - py) ** 2 < t2;
+    return (ax - pt[0]) ** 2 + (ay - pt[1]) ** 2 < t2;
   }
   for (let i = 1; i < pts.length; i++) {
-    if (segDistSq(pts[i - 1], pts[i], [px, py]) < t2) return true;
+    if (segDistSq(pts[i - 1], pts[i], pt) < t2) return true;
   }
   return false;
-}
-
-function segDistSq(
-  [ax, ay]: [number, number],
-  [bx, by]: [number, number],
-  [px, py]: [number, number],
-): number {
-  const dx = bx - ax;
-  const dy = by - ay;
-  const len2 = dx * dx + dy * dy || 1;
-  let t = ((px - ax) * dx + (py - ay) * dy) / len2;
-  if (t < 0) t = 0;
-  else if (t > 1) t = 1;
-  const x = ax + t * dx;
-  const y = ay + t * dy;
-  return (px - x) ** 2 + (py - y) ** 2;
 }

@@ -1,29 +1,43 @@
 // Wrapper around @cortex-js/compute-engine.
 //
-// Three operations:
-//   solveExpr(latex)             — evaluate / simplify a single expression
-//   solveEquation(latex)         — solve a single equation for its unknown(s)
-//   solveSystem(latexes)         — solve a system of equations together
+// Public surface:
+//   ce                              singleton compute engine
+//   ingestDefinitions(blocks)       scan blocks for `var = number` and bind
+//                                   the values into ce so other blocks see them
+//   simplify(latex)                 simplify only (no numeric eval)
+//   solveExpr(latex, { showSteps }) full smart solve: simplify, numeric, solve
+//   solveSystem(latexes, opts)      solve a list of equations together
+//   formatSteps(steps)              render an array of latex steps as
+//                                   aligned multi-line LaTeX
 //
-// The engine is instantiated once at module load (synchronous import means
-// it's ready by the time any user clicks "Solve" — no more loading races).
+// We lean on compute-engine for all the heavy lifting — parsing, simplification,
+// solve, numeric evaluation. No re-implementation of CAS.
 
 import { ComputeEngine, type BoxedExpression } from '@cortex-js/compute-engine';
+import type { Block, MathBlock } from '../state/types';
 
 export const ce = new ComputeEngine();
 
-export interface SolveResult {
-  /** LaTeX of the result to render in a fresh block. */
+export interface Step {
+  /** Short label shown to the left of the step ("simplify", "evaluate", …). */
+  label: string;
   latex: string;
-  /** Optional description shown as the block's note. */
+}
+
+export interface SolveResult {
+  /** Final LaTeX to drop into a new block. */
+  latex: string;
+  /** Optional explanatory note for the result block. */
   note?: string;
-  /** True if the engine produced something we'd actually call a solution. */
+  /** Step-by-step derivation; populated when `showSteps` is true. */
+  steps?: Step[];
+  /** True if we produced anything that looks like a real result. */
   ok: boolean;
 }
 
 const FAIL = (msg: string): SolveResult => ({ latex: '', note: msg, ok: false });
 
-/** Parse latex safely. Returns null on invalid input. */
+// ---------- parsing helpers -----------------------------------------
 function parse(latex: string): BoxedExpression | null {
   if (!latex || !latex.trim()) return null;
   try {
@@ -42,12 +56,13 @@ function isEqual(expr: BoxedExpression): boolean {
 
 function getUnknowns(expr: BoxedExpression): string[] {
   const u = (expr as any).unknowns;
-  if (Array.isArray(u)) return u as string[];
-  return [];
+  return Array.isArray(u) ? u as string[] : [];
 }
 
-function exprLatex(x: BoxedExpression): string {
-  // Prefer numerical form when it gives a clean number
+/** Stringify a BoxedExpression for display — prefers numeric form when
+ *  the engine yields a clean number. */
+function exprLatex(x: BoxedExpression | null | undefined): string {
+  if (!x) return '';
   try {
     const n = x.N();
     if (n && n.isValid !== false && n.isNumber) return n.latex;
@@ -55,37 +70,114 @@ function exprLatex(x: BoxedExpression): string {
   return x.latex;
 }
 
-// ---------- single expression: simplify + numerically evaluate ----------
-export function solveExpr(latex: string): SolveResult {
+// ---------- variable definitions ------------------------------------
+// Walk the active sheet and assign any `name = numericValue` math-blocks
+// as known values in compute-engine. This is what makes `F = ma` "just work"
+// when `m = 5; a = 9.8` are written elsewhere on the same sheet.
+
+export interface Definition {
+  name: string;
+  latex: string;          // the right-hand side's latex
+  numeric: number | null; // null if the RHS isn't a plain number
+}
+
+export function ingestDefinitions(blocks: Block[]): Definition[] {
+  // Reset any previous bindings so old, deleted blocks don't linger.
+  // Compute-engine's `forget()` clears user assignments.
+  try { (ce as any).forget?.(); } catch { /* ignore */ }
+
+  const defs: Definition[] = [];
+  for (const b of blocks) {
+    if (b.type !== 'math') continue;
+    const d = detectDefinition(b);
+    if (!d) continue;
+    try {
+      const rhs = parse(d.latex);
+      if (!rhs) continue;
+      (ce as any).assign?.(d.name, rhs);
+      defs.push(d);
+    } catch { /* ignore — partial defs still useful */ }
+  }
+  return defs;
+}
+
+/** Detect `name = …` patterns: top-level `Equal` where the LHS is a single
+ *  symbol. Returns the binding info or null. */
+export function detectDefinition(b: MathBlock): Definition | null {
+  const expr = parse(b.latex);
+  if (!expr || !isEqual(expr)) return null;
+  const ops = (expr as any).ops as BoxedExpression[] | undefined;
+  if (!ops || ops.length < 2) return null;
+  const lhs = ops[0], rhs = ops[1];
+  const sym = (lhs as any).symbol as string | undefined;
+  if (!sym) return null;
+  let numeric: number | null = null;
+  try {
+    const n = rhs.N();
+    if (n && n.isNumber) numeric = Number((n as any).numericValue ?? n.latex) || null;
+  } catch { /* not numeric */ }
+  return { name: sym, latex: rhs.latex, numeric };
+}
+
+// ---------- simplify -------------------------------------------------
+export function simplify(latex: string): SolveResult {
   const expr = parse(latex);
   if (!expr) return FAIL('Could not parse');
-
-  if (isEqual(expr)) return solveEquation(latex);
-
   try {
-    const simplified = expr.simplify();
-    return { latex: exprLatex(simplified), ok: true };
+    const r = expr.simplify();
+    return { latex: r.latex, ok: true };
   } catch {
-    return FAIL('Could not evaluate');
+    return FAIL('Could not simplify');
   }
 }
 
-// ---------- single equation ----------
-export function solveEquation(latex: string): SolveResult {
+// ---------- single expression / equation -----------------------------
+export interface SolveOptions { showSteps?: boolean }
+
+export function solveExpr(latex: string, opts: SolveOptions = {}): SolveResult {
   const expr = parse(latex);
   if (!expr) return FAIL('Could not parse');
-  if (!isEqual(expr)) return solveExpr(latex);
+  if (isEqual(expr)) return solveEquation(latex, opts);
+
+  const steps: Step[] = [{ label: 'given', latex: expr.latex }];
+
+  let simplified: BoxedExpression;
+  try { simplified = expr.simplify(); }
+  catch { return FAIL('Could not evaluate'); }
+
+  if (simplified.latex !== expr.latex) {
+    steps.push({ label: 'simplify', latex: simplified.latex });
+  }
+
+  let final = simplified;
+  try {
+    const n = simplified.N();
+    if (n && n.isValid !== false && n.latex !== simplified.latex) {
+      steps.push({ label: 'evaluate', latex: n.latex });
+      final = n;
+    }
+  } catch { /* ignore numeric eval failure */ }
+
+  return {
+    latex: opts.showSteps && steps.length > 1
+      ? formatSteps(steps)
+      : exprLatex(final),
+    steps: opts.showSteps ? steps : undefined,
+    ok: true,
+  };
+}
+
+export function solveEquation(latex: string, opts: SolveOptions = {}): SolveResult {
+  const expr = parse(latex);
+  if (!expr || !isEqual(expr)) return solveExpr(latex, opts);
 
   const unknowns = getUnknowns(expr);
   if (unknowns.length === 0) {
-    // Constant equation like `1 + 1 = 2` — simplify each side and compare
-    try {
-      const r = expr.simplify();
-      return { latex: r.latex, ok: true };
-    } catch {
-      return FAIL('Could not simplify');
-    }
+    try { return { latex: expr.simplify().latex, ok: true }; }
+    catch { return FAIL('Could not simplify'); }
   }
+
+  const steps: Step[] = [{ label: 'given', latex: expr.latex }];
 
   try {
     const sols = (expr as any).solve(unknowns) as BoxedExpression[] | undefined;
@@ -93,17 +185,23 @@ export function solveEquation(latex: string): SolveResult {
       return { latex: '\\text{no solution}', ok: true };
     }
     const v = unknowns[0];
-    const text = sols
+    const finalLatex = sols
       .map((s) => `${v} = ${exprLatex(s)}`)
       .join(',\\quad ');
-    return { latex: text, ok: true };
+    steps.push({ label: 'solve for ' + v, latex: finalLatex });
+
+    return {
+      latex: opts.showSteps ? formatSteps(steps) : finalLatex,
+      steps: opts.showSteps ? steps : undefined,
+      ok: true,
+    };
   } catch {
     return FAIL('Could not solve');
   }
 }
 
-// ---------- system of equations ----------
-export function solveSystem(latexes: string[]): SolveResult {
+// ---------- system of equations --------------------------------------
+export function solveSystem(latexes: string[], opts: SolveOptions = {}): SolveResult {
   const exprs: BoxedExpression[] = [];
   for (const l of latexes) {
     const e = parse(l);
@@ -111,33 +209,44 @@ export function solveSystem(latexes: string[]): SolveResult {
     if (!isEqual(e)) return FAIL('Each block must be an equation (use =)');
     exprs.push(e);
   }
-  if (exprs.length === 0) return FAIL('No equations selected');
+  if (exprs.length === 0) return FAIL('No equations to solve');
 
-  // collect all unknowns across equations
   const unknownsSet = new Set<string>();
   for (const e of exprs) for (const u of getUnknowns(e)) unknownsSet.add(u);
   const unknowns = [...unknownsSet];
   if (unknowns.length === 0) return FAIL('No unknowns to solve for');
 
+  const steps: Step[] = exprs.map((e, i) => ({
+    label: `eq ${i + 1}`,
+    latex: e.latex,
+  }));
+
   try {
-    // Wrap as List of equations and call solve()
     const system = (ce as any).function?.('List', exprs)
       ?? (ce as any).box?.(['List', ...exprs.map((e) => e.json)])
       ?? null;
     if (!system) return FAIL('Compute engine API mismatch');
 
     const sols = (system as BoxedExpression).solve(unknowns) as unknown;
-    return formatSystemResult(sols, unknowns);
+    const finalLatex = formatSystemResult(sols, unknowns);
+    if (!finalLatex) return FAIL('No solution');
+    steps.push({ label: 'solve', latex: finalLatex });
+
+    return {
+      latex: opts.showSteps ? formatSteps(steps) : finalLatex,
+      steps: opts.showSteps ? steps : undefined,
+      ok: true,
+    };
   } catch (err) {
     console.error(err);
     return FAIL('Could not solve the system');
   }
 }
 
-function formatSystemResult(sols: unknown, unknowns: string[]): SolveResult {
-  if (!sols) return FAIL('No solution');
+function formatSystemResult(sols: unknown, unknowns: string[]): string | null {
+  if (!sols) return null;
 
-  // shape 1: array of objects (multiple solutions for nonlinear systems)
+  // array of objects (multiple non-linear solutions)
   if (Array.isArray(sols) && sols.length && typeof sols[0] === 'object'
       && !(sols[0] instanceof Object && (sols[0] as any).latex)) {
     const lines = (sols as Record<string, BoxedExpression>[]).map((sol, i) => {
@@ -145,46 +254,45 @@ function formatSystemResult(sols: unknown, unknowns: string[]): SolveResult {
       return sols.length > 1 ? `\\text{solution ${i + 1}: }\\ ${parts}` : parts;
     });
     const body = lines.join('\\\\');
-    return {
-      latex: sols.length > 1 ? `\\begin{aligned}${body}\\end{aligned}` : body,
-      ok: true,
-    };
+    return sols.length > 1 ? `\\begin{aligned}${body}\\end{aligned}` : body;
   }
 
-  // shape 2: single object { x: BoxedExpression, y: BoxedExpression }
+  // single object
   if (sols && typeof sols === 'object' && !Array.isArray(sols)) {
     const m = sols as Record<string, BoxedExpression>;
     const parts = unknowns
       .filter((v) => v in m)
       .map((v) => `${v} = ${exprLatex(m[v])}`)
       .join(',\\quad ');
-    return parts ? { latex: parts, ok: true } : FAIL('Empty solution');
+    return parts || null;
   }
 
-  // shape 3: array of BoxedExpressions (univariate roots)
+  // univariate root array
   if (Array.isArray(sols) && unknowns.length === 1) {
     const v = unknowns[0];
-    const text = (sols as BoxedExpression[])
+    return (sols as BoxedExpression[])
       .map((s) => `${v} = ${exprLatex(s)}`)
       .join(',\\quad ');
-    return { latex: text, ok: true };
   }
 
-  return FAIL('Could not interpret solution');
+  return null;
 }
 
-// ---------- variable detection (for future "known values" intelligence) ----------
-export function detectDefinition(latex: string): { name: string; value: BoxedExpression } | null {
-  const expr = parse(latex);
-  if (!expr || !isEqual(expr)) return null;
-  const ops = (expr as any).ops as BoxedExpression[] | undefined;
-  if (!ops || ops.length < 2) return null;
-  const lhs = ops[0], rhs = ops[1];
-  const sym = (lhs as any).symbol as string | undefined;
-  if (!sym) return null;
-  try {
-    const n = rhs.N();
-    if (n && n.isNumber) return { name: sym, value: n };
-  } catch { /* not numeric */ }
-  return null;
+// ---------- step formatting ------------------------------------------
+/**
+ * Render a list of steps as a clean multi-line LaTeX block. We use
+ * \begin{aligned}…\end{aligned} for legibility, plus a "\text{…}" label
+ * on each row indicating the operation.
+ */
+export function formatSteps(steps: Step[]): string {
+  if (steps.length === 0) return '';
+  if (steps.length === 1) return steps[0].latex;
+  const rows = steps.map(
+    (s) => `&\\quad ${s.latex} && \\text{${escapeText(s.label)}}`,
+  );
+  return `\\begin{aligned}${rows.join('\\\\')}\\end{aligned}`;
+}
+
+function escapeText(s: string): string {
+  return s.replace(/\\/g, '\\textbackslash{}').replace(/[{}_^]/g, '\\$&');
 }
