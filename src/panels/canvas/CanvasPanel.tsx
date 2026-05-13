@@ -22,6 +22,9 @@ import { CanvasMainMenu } from './CanvasMainMenu';
 import { CanvasTopRight } from './CanvasTopRight';
 import { CanvasFooter } from './CanvasFooter';
 import { CanvasWelcome } from './CanvasWelcome';
+import { MathOverlay } from './MathOverlay';
+import { useAnchorSync } from './anchors';
+import { setExcalidrawAPI } from './inject';
 
 const SCENE_DEBOUNCE_MS = 250;
 
@@ -33,6 +36,9 @@ export default function CanvasPanel() {
 
   // ExcalidrawImperativeAPI ref — captured via the `excalidrawAPI` prop.
   const apiRef = useRef<ExcalidrawImperativeAPI | null>(null);
+
+  // Bidirectional block ↔ anchor sync.
+  useAnchorSync(apiRef);
 
   // `initialData` is read once per sheet mount; flipping sheets needs a
   // remount, so we use the sheetId as a React key on <Excalidraw>.
@@ -75,7 +81,7 @@ export default function CanvasPanel() {
     <div className="h-full w-full relative">
       <Excalidraw
         key={activeSheetId}
-        excalidrawAPI={(api) => { apiRef.current = api; }}
+        excalidrawAPI={(api) => { apiRef.current = api; setExcalidrawAPI(api); }}
         initialData={initialData}
         onChange={onChange}
         theme={theme}
@@ -98,6 +104,7 @@ export default function CanvasPanel() {
         <CanvasFooter />
         <CanvasWelcome />
       </Excalidraw>
+      <MathOverlay apiRef={apiRef} />
     </div>
   );
 }
