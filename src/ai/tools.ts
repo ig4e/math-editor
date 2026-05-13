@@ -105,5 +105,23 @@ export function buildTools(_provider: ProviderAdapter, opts: BuildToolsOpts) {
         return { ok: true };
       },
     }),
+
+    ask_wolfram: tool({
+      description: 'Query Wolfram Alpha for a math fact, conversion, or symbolic result. Requires the deployment to have WOLFRAM_APPID configured. Returns Wolfram\'s short plain-text answer.',
+      inputSchema: z.object({
+        query: z.string().describe('A natural-language or math query, e.g. "integral of x sin(x) dx"'),
+      }),
+      execute: async ({ query }) => {
+        try {
+          const r = await fetch(`/api/wolfram?q=${encodeURIComponent(query)}&format=short`);
+          if (!r.ok) {
+            return { ok: false, status: r.status, reason: await r.text() };
+          }
+          return { ok: true, answer: (await r.text()).trim() };
+        } catch (e) {
+          return { ok: false, reason: (e as Error).message };
+        }
+      },
+    }),
   };
 }

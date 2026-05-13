@@ -9,3 +9,5 @@ import './computeEngine';
 // loading the heavy mathjs code yet — the solver's `invoke` does the
 // dynamic import.
 import './mathsteps';
+// Wolfram is online-only; runner filters it out unless allowOnline=true.
+import './wolfram';

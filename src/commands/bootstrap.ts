@@ -231,6 +231,24 @@ const bootstrap: Command[] = [
     },
   },
   {
+    id: 'math.openInWolfram',
+    label: 'Open selection in Wolfram Alpha',
+    category: 'Math',
+    icon: 'sparkles',
+    when: (ctx) => ctx.selectedMathBlockCount >= 1,
+    run: (ctx) => {
+      const state = ctx.getState();
+      const sheet = state.sheets[state.activeSheetId];
+      if (!sheet) return;
+      const block = state.selectedIds
+        .map((id) => sheet.blocks.find((b) => b.id === id))
+        .find((b) => b?.type === 'math');
+      if (!block || block.type !== 'math') return;
+      const stripped = block.latex.replace(/\\/g, '').trim();
+      window.open(`https://www.wolframalpha.com/input?i=${encodeURIComponent(stripped)}`, '_blank', 'noopener');
+    },
+  },
+  {
     id: 'file.exportWorkspace',
     label: 'Export workspace (JSON)',
     category: 'File',
