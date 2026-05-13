@@ -14,7 +14,10 @@ import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from '
 import {
   Layout, Model, type IJsonModel, type TabNode, type ITabSetRenderValues,
 } from 'flexlayout-react';
-import 'flexlayout-react/style/light.css';
+// Custom flexlayout styles (replace the stock light.css). Restyles the
+// tab bar to a modern slim look anchored on our design tokens; dark
+// mode falls out of the same vars.
+import './flexlayout.css';
 
 import { useStore } from '../state/store';
 import { getPanel, subscribePanels } from './PanelRegistry';
