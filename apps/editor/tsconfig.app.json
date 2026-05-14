@@ -17,7 +17,27 @@
     "resolveJsonModule": true,
     "allowImportingTsExtensions": false,
     "noEmit": true,
-    "useDefineForClassFields": true
+    "useDefineForClassFields": true,
+
+    // While the editor is still consuming the npm-published
+    // @excalidraw/excalidraw (A.2 vendored source, A.3 flips the
+    // switch), its dist .d.ts files re-export from `@excalidraw/utils`
+    // and `@excalidraw/math` as if those were separate packages.
+    // pnpm puts our workspace copies under `.pnpm/node_modules/` to
+    // satisfy that — and the editor's strict typecheck then chews
+    // through 1000+ TS-5 strictness issues in the vendored source.
+    //
+    // Until A.3, point both subpath references at the npm dist's own
+    // .d.ts (which were emitted as a sealed type surface). This keeps
+    // the editor's typecheck honest about the public Excalidraw API
+    // without dragging in the workspace source's internals.
+    "baseUrl": ".",
+    "paths": {
+      "@excalidraw/utils": ["./node_modules/@excalidraw/excalidraw/dist/types/utils/index.d.ts"],
+      "@excalidraw/utils/*": ["./node_modules/@excalidraw/excalidraw/dist/types/utils/*"],
+      "@excalidraw/math": ["./node_modules/@excalidraw/excalidraw/dist/types/math/index.d.ts"],
+      "@excalidraw/math/*": ["./node_modules/@excalidraw/excalidraw/dist/types/math/*"]
+    }
   },
   "include": ["src"]
 }

@@ -1,0 +1,22 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    // node types let us reference `process.env`, `Buffer`, and `require`
+    // that Excalidraw's source uses; the bundler replaces them at build
+    // time but TS needs the globals at check time.
+    "types": ["resize-observer-browser", "node"]
+  },
+  "include": ["**/*.ts", "**/*.tsx", "../third-party.d.ts"],
+  "exclude": [
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.test.helpers.ts",
+    "**/*.test.helpers.tsx",
+    "**/test-utils.ts",
+    "**/tests/**",
+    "**/__snapshots__/**",
+    "**/__tests__/**",
+    "dist",
+    "node_modules"
+  ]
+}

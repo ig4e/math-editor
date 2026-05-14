@@ -231,9 +231,215 @@ importers:
       vitest:
         specifier: ^4.1.6
         version: 4.1.6(@opentelemetry/api@1.9.1)(@types/node@25.7.0)(jsdom@29.1.1)(vite@6.4.2(@types/node@25.7.0)(jiti@2.7.0)(lightningcss@1.32.0)(sass@1.51.0)(terser@5.47.1))
+      workbox-core:
+        specifier: ^7.4.1
+        version: 7.4.1
+      workbox-expiration:
+        specifier: ^7.4.1
+        version: 7.4.1
+      workbox-precaching:
+        specifier: ^7.4.1
+        version: 7.4.1
+      workbox-routing:
+        specifier: ^7.4.1
+        version: 7.4.1
+      workbox-strategies:
+        specifier: ^7.4.1
+        version: 7.4.1
       workbox-window:
         specifier: ^7.4.1
         version: 7.4.1
+
+  packages/excalidraw:
+    dependencies:
+      '@braintree/sanitize-url':
+        specifier: 6.0.2
+        version: 6.0.2
+      '@excalidraw/laser-pointer':
+        specifier: 1.3.1
+        version: 1.3.1
+      '@excalidraw/math':
+        specifier: workspace:*
+        version: link:../math
+      '@excalidraw/mermaid-to-excalidraw':
+        specifier: 2.2.2
+        version: 2.2.2
+      '@excalidraw/random-username':
+        specifier: 1.1.0
+        version: 1.1.0
+      '@excalidraw/utils':
+        specifier: workspace:*
+        version: link:../utils
+      '@radix-ui/react-popover':
+        specifier: 1.1.6
+        version: 1.1.6(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
+      '@radix-ui/react-tabs':
+        specifier: 1.0.2
+        version: 1.0.2(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
+      browser-fs-access:
+        specifier: 0.29.1
+        version: 0.29.1
+      canvas-roundrect-polyfill:
+        specifier: 0.0.1
+        version: 0.0.1
+      clsx:
+        specifier: 1.1.1
+        version: 1.1.1
+      cross-env:
+        specifier: 7.0.3
+        version: 7.0.3
+      es6-promise-pool:
+        specifier: 2.5.0
+        version: 2.5.0
+      fractional-indexing:
+        specifier: 3.2.0
+        version: 3.2.0
+      fuzzy:
+        specifier: 0.1.3
+        version: 0.1.3
+      image-blob-reduce:
+        specifier: 3.0.1
+        version: 3.0.1
+      jotai:
+        specifier: 2.11.0
+        version: 2.11.0(@types/react@19.2.14)(react@19.2.6)
+      jotai-scope:
+        specifier: 0.7.2
+        version: 0.7.2(jotai@2.11.0(@types/react@19.2.14)(react@19.2.6))(react@19.2.6)
+      lodash.debounce:
+        specifier: 4.0.8
+        version: 4.0.8
+      lodash.throttle:
+        specifier: 4.1.1
+        version: 4.1.1
+      nanoid:
+        specifier: 3.3.3
+        version: 3.3.3
+      open-color:
+        specifier: 1.9.1
+        version: 1.9.1
+      pako:
+        specifier: 2.0.3
+        version: 2.0.3
+      perfect-freehand:
+        specifier: 1.2.0
+        version: 1.2.0
+      pica:
+        specifier: 7.1.1
+        version: 7.1.1
+      png-chunk-text:
+        specifier: 1.0.0
+        version: 1.0.0
+      png-chunks-encode:
+        specifier: 1.0.0
+        version: 1.0.0
+      png-chunks-extract:
+        specifier: 1.0.0
+        version: 1.0.0
+      points-on-curve:
+        specifier: 1.0.1
+        version: 1.0.1
+      pwacompat:
+        specifier: 2.0.17
+        version: 2.0.17
+      roughjs:
+        specifier: 4.6.4
+        version: 4.6.4
+      sass:
+        specifier: 1.51.0
+        version: 1.51.0
+      tunnel-rat:
+        specifier: 0.1.2
+        version: 0.1.2(@types/react@19.2.14)(immer@10.2.0)(react@19.2.6)
+    devDependencies:
+      '@types/lodash.debounce':
+        specifier: 4.0.8
+        version: 4.0.8
+      '@types/lodash.throttle':
+        specifier: 4.1.9
+        version: 4.1.9
+      '@types/node':
+        specifier: ^25.7.0
+        version: 25.7.0
+      '@types/pako':
+        specifier: 2.0.3
+        version: 2.0.3
+      '@types/pica':
+        specifier: 5.1.3
+        version: 5.1.3
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.14
+      '@types/react-dom':
+        specifier: ^19.0.0
+        version: 19.2.3(@types/react@19.2.14)
+      '@types/resize-observer-browser':
+        specifier: 0.1.7
+        version: 0.1.7
+      react:
+        specifier: ^19.0.0
+        version: 19.2.6
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.2.6(react@19.2.6)
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+
+  packages/math:
+    devDependencies:
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+
+  packages/utils:
+    dependencies:
+      '@braintree/sanitize-url':
+        specifier: 6.0.2
+        version: 6.0.2
+      '@excalidraw/excalidraw':
+        specifier: workspace:*
+        version: link:../excalidraw
+      '@excalidraw/laser-pointer':
+        specifier: 1.3.1
+        version: 1.3.1
+      '@excalidraw/math':
+        specifier: workspace:*
+        version: link:../math
+      browser-fs-access:
+        specifier: 0.29.1
+        version: 0.29.1
+      open-color:
+        specifier: 1.9.1
+        version: 1.9.1
+      pako:
+        specifier: 2.0.3
+        version: 2.0.3
+      perfect-freehand:
+        specifier: 1.2.0
+        version: 1.2.0
+      png-chunk-text:
+        specifier: 1.0.0
+        version: 1.0.0
+      png-chunks-encode:
+        specifier: 1.0.0
+        version: 1.0.0
+      png-chunks-extract:
+        specifier: 1.0.0
+        version: 1.0.0
+      points-on-curve:
+        specifier: 1.0.1
+        version: 1.0.1
+      roughjs:
+        specifier: 4.6.4
+        version: 4.6.4
+    devDependencies:
+      '@types/pako':
+        specifier: 2.0.3
+        version: 2.0.3
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
 
 packages:
 
@@ -2431,6 +2637,15 @@ packages:
   '@types/json-schema@7.0.15':
     resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
 
+  '@types/lodash.debounce@4.0.8':
+    resolution: {integrity: sha512-REumepIJjQFSOaBUoj81U5ZzF9YIhovzE2Lm6ejUbycmwx597k2ivG1cVfPtAj4eVuSbGoZDkJR0sRIahsE6/Q==}
+
+  '@types/lodash.throttle@4.1.9':
+    resolution: {integrity: sha512-PCPVfpfueguWZQB7pJQK890F2scYKoDUL3iM522AptHWn7d5NQmeS/LTEHIcLr5PaTzl3dK2Z0xSUHHTHwaL5g==}
+
+  '@types/lodash@4.17.24':
+    resolution: {integrity: sha512-gIW7lQLZbue7lRSWEFql49QJJWThrTFFeIMJdp3eH4tKoxm1OvEPg02rm4wCCSHS0cL3/Fizimb35b7k8atwsQ==}
+
   '@types/long@4.0.2':
     resolution: {integrity: sha512-MqTGEo5bj5t157U6fA/BiDynNkn0YknVdh48CMPkTSpFTVmvao5UQmm7uEF6xBEo7qIMAlY/JSleYaE6VOdpaA==}
 
@@ -2446,8 +2661,14 @@ packages:
   '@types/offscreencanvas@2019.7.3':
     resolution: {integrity: sha512-ieXiYmgSRXUDeOntE1InxjWyvEelZGP63M+cGuquuRLuIKKT1osnkXjxev9B7d1nXSug5vpunx+gNlbVxMlC9A==}
 
+  '@types/pako@2.0.3':
+    resolution: {integrity: sha512-bq0hMV9opAcrmE0Byyo0fY3Ew4tgOevJmQ9grUhpXQhYfyLJ1Kqg3P33JT5fdbT2AjeAjR51zqqVjAL/HMkx7Q==}
+
   '@types/pako@2.0.4':
     resolution: {integrity: sha512-VWDCbrLeVXJM9fihYodcLiIv0ku+AlOa/TQ1SvYOaBuyrSKgEcro95LJyIsJ4vSo6BXIxOKxiJAat04CmST9Fw==}
+
+  '@types/pica@5.1.3':
+    resolution: {integrity: sha512-13SEyETRE5psd9bE0AmN+0M1tannde2fwHfLVaVIljkbL9V0OfFvKwCicyeDvVYLkmjQWEydbAlsDsmjrdyTOg==}
 
   '@types/raf@3.4.3':
     resolution: {integrity: sha512-c4YAvMedbPZ5tEyxzQdMoOhhJ4RD3rngZIdwC2/qDN3d7JpEhB6fiBRKVY1lg5B7Wk+uPBjn5f39j1/2MY1oOw==}
@@ -2464,6 +2685,9 @@ packages:
 
   '@types/react@19.2.14':
     resolution: {integrity: sha512-ilcTH/UniCkMdtexkoCN0bI7pMcJDvmQFPvuPvmEaYA/NSfFTAgdUSLAoVjaRJm7+6PvcM+q1zYOwS4wTYMF9w==}
+
+  '@types/resize-observer-browser@0.1.7':
+    resolution: {integrity: sha512-G9eN0Sn0ii9PWQ3Vl72jDPgeJwRWhv2Qk/nQkJuWmRmOB4HX3/BhD5SE1dZs/hzPZL/WKnvF0RHdTSG54QJFyg==}
 
   '@types/resolve@1.20.2':
     resolution: {integrity: sha512-60BCwRFOZCQhDncwQdxxeOEEkbc5dIMccYLwbxsS4TUNeVECQ/pBJ0j09mrHOl/JJvpRPGwO9SvE4nR2Nb/a4Q==}
@@ -7521,6 +7745,16 @@ snapshots:
 
   '@types/json-schema@7.0.15': {}
 
+  '@types/lodash.debounce@4.0.8':
+    dependencies:
+      '@types/lodash': 4.17.24
+
+  '@types/lodash.throttle@4.1.9':
+    dependencies:
+      '@types/lodash': 4.17.24
+
+  '@types/lodash@4.17.24': {}
+
   '@types/long@4.0.2': {}
 
   '@types/node-fetch@2.6.13':
@@ -7536,7 +7770,11 @@ snapshots:
 
   '@types/offscreencanvas@2019.7.3': {}
 
+  '@types/pako@2.0.3': {}
+
   '@types/pako@2.0.4': {}
+
+  '@types/pica@5.1.3': {}
 
   '@types/raf@3.4.3':
     optional: true
@@ -7552,6 +7790,8 @@ snapshots:
   '@types/react@19.2.14':
     dependencies:
       csstype: 3.2.3
+
+  '@types/resize-observer-browser@0.1.7': {}
 
   '@types/resolve@1.20.2': {}
 

@@ -1,0 +1,19 @@
+{
+  "name": "@excalidraw/math",
+  "version": "0.18.1-fork.0",
+  "type": "module",
+  "private": true,
+  "description": "Vendored from excalidraw v0.18.1 (see ../FORKED_FROM.md). Pure-function geometry helpers used by the canvas + element packages.",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "files": [
+    "**/*.ts",
+    "!**/*.test.ts"
+  ],
+  "scripts": {
+    "//typecheck": "No standalone typecheck — math's files are checked through @excalidraw/excalidraw's typecheck (which imports them) and through apps/editor."
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  }
+}

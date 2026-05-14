@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "useDefineForClassFields": true,
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true,
+    "noEmit": true,
+
+    // Excalidraw's source uses workspace path imports
+    // (`@excalidraw/utils/geometry/shape` etc.). pnpm's symlinks let
+    // Bundler resolution find these — paths are belt-and-braces for any
+    // tool that doesn't follow symlinks.
+    "baseUrl": ".",
+    "paths": {
+      "@excalidraw/excalidraw": ["./excalidraw/index.tsx"],
+      "@excalidraw/utils": ["./utils/index.ts"],
+      "@excalidraw/math": ["./math/index.ts"],
+      "@excalidraw/excalidraw/*": ["./excalidraw/*"],
+      "@excalidraw/utils/*": ["./utils/*"],
+      "@excalidraw/math/*": ["./math/*"]
+    }
+  }
+}
