@@ -1,0 +1,9 @@
+// Single-entry SCSS barrel that consumers import via
+// `@excalidraw/excalidraw/index.scss`. Mirrors what the published
+// `@excalidraw/excalidraw/index.css` bundled for npm consumers.
+//
+// Vite handles `.scss` natively (sass is a devDep of this package).
+
+@use "./css/app.scss";
+@use "./css/styles.scss";
+@use "./fonts/fonts.css";

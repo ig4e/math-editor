@@ -1,0 +1,11 @@
+{
+  // See packages/excalidraw/tsconfig.build.json for context.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "noCheck": true,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "outDir": "./dist/types"
+  }
+}

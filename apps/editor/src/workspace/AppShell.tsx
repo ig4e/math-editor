@@ -17,7 +17,11 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type React
 import { Excalidraw, Sidebar } from '@excalidraw/excalidraw';
 import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
 import type { NonDeleted, ExcalidrawEmbeddableElement } from '@excalidraw/excalidraw/element/types';
-import '@excalidraw/excalidraw/index.css';
+// SCSS barrel exported by the workspace fork of @excalidraw/excalidraw.
+// The published npm package shipped a single bundled `index.css`; the
+// source equivalent splits into app.scss + styles.scss + fonts/fonts.css,
+// re-exported through ../packages/excalidraw/index.scss.
+import '@excalidraw/excalidraw/index.scss';
 
 import { useStore } from '../state/store';
 import { useActiveSheet } from '../state/selectors';

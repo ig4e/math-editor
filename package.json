@@ -10,7 +10,8 @@
     "build": "pnpm --filter editor build",
     "build:cf": "pnpm build && node scripts/build-cf-functions.mjs",
     "preview": "pnpm --filter editor preview",
-    "typecheck": "pnpm -r --parallel typecheck",
+    "build:types": "pnpm --filter @excalidraw/excalidraw build:types",
+    "typecheck": "pnpm build:types && pnpm -r --parallel typecheck",
     "check:contrast": "node scripts/check-contrast.mjs",
     "lint": "pnpm --filter editor lint",
     "test": "pnpm -r --parallel --aggregate-output test"
