@@ -9,6 +9,7 @@ import type {
 import type { Bounds } from "../element/bounds";
 import { getCommonBounds, getElementAbsoluteCoords } from "../element/bounds";
 import { renderSceneToSvg } from "../renderer/staticSvgScene";
+import type { SVGRenderConfig } from "./types";
 import { arrayToMap, distance, getFontString, toBrandedType } from "../utils";
 import type { AppState, BinaryFiles } from "../types";
 import {
@@ -282,6 +283,12 @@ export const exportToSvg = async (
     exportingFrame?: ExcalidrawFrameLikeElement | null;
     skipInliningFonts?: true;
     reuseImages?: boolean;
+    /**
+     * math-editor fork: SVG-side equivalent of `renderBlockContent`.
+     * Returns the SVG fragment to render inside each block element's
+     * frame. See SVGRenderConfig.renderBlockToSvg.
+     */
+    renderBlockToSvg?: SVGRenderConfig["renderBlockToSvg"];
   },
 ): Promise<SVGSVGElement> => {
   const frameRendering = getFrameRenderingConfig(
@@ -470,6 +477,7 @@ export const exportToSvg = async (
           )
         : new Map(),
       reuseImages: opts?.reuseImages ?? true,
+      renderBlockToSvg: opts?.renderBlockToSvg,
     },
   );
 

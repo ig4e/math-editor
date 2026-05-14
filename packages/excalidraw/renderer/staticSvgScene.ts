@@ -564,24 +564,31 @@ const renderElementToSvg = (
       }
       break;
     }
-    // math-editor fork: SVG export emits the frame (rounded rect with
-    // element bg/stroke) but not the editable content. The HTML overlay
-    // is DOM and can't be captured into SVG; this matches what
-    // `embeddable` does for the same reason. Stage C-future could
-    // optionally render KaTeX-as-SVG inside the rect for static export.
+    // math-editor fork: blocks export as a rounded-rect frame plus,
+    // optionally, the host-supplied SVG fragment for the content
+    // (KaTeX-rendered math, multi-line text…). The frame + content
+    // share one rotation transform so they stay aligned. Without a
+    // renderBlockToSvg hook, just the frame is drawn — matching the
+    // pre-D.1 behaviour.
     case "math":
     case "text-block": {
       const radius = Math.min(
         Math.min(element.width, element.height) * 0.25,
         16,
       );
-      const rect = document.createElementNS(SVG_NS, "rect");
-      rect.setAttribute(
+
+      const group = document.createElementNS(SVG_NS, "g");
+      group.setAttribute(
         "transform",
         `translate(${offsetX || 0} ${
           offsetY || 0
         }) rotate(${degree} ${cx} ${cy})`,
       );
+      if (opacity !== 1) {
+        group.setAttribute("opacity", `${opacity}`);
+      }
+
+      const rect = document.createElementNS(SVG_NS, "rect");
       rect.setAttribute("width", `${element.width}px`);
       rect.setAttribute("height", `${element.height}px`);
       rect.setAttribute("rx", `${radius}`);
@@ -599,10 +606,14 @@ const renderElementToSvg = (
           : "none",
       );
       rect.setAttribute("stroke-width", `${element.strokeWidth || 1}`);
-      if (opacity !== 1) {
-        rect.setAttribute("opacity", `${opacity}`);
+      group.appendChild(rect);
+
+      const blockFragment = renderConfig.renderBlockToSvg?.(element);
+      if (blockFragment) {
+        group.appendChild(blockFragment);
       }
-      addToRoot(rect, element);
+
+      addToRoot(group, element);
       break;
     }
     // frames are not rendered and only acts as a container

@@ -5,6 +5,7 @@ import {
 import { getDefaultAppState } from "@excalidraw/excalidraw/appState";
 import type { AppState, BinaryFiles } from "@excalidraw/excalidraw/types";
 import type {
+  ExcalidrawBlockElement,
   ExcalidrawElement,
   ExcalidrawFrameLikeElement,
   NonDeleted,
@@ -168,11 +169,20 @@ export const exportToSvg = async ({
   exportingFrame,
   skipInliningFonts,
   reuseImages,
+  renderBlockToSvg,
 }: Omit<ExportOpts, "getDimensions"> & {
   exportPadding?: number;
   renderEmbeddables?: boolean;
   skipInliningFonts?: true;
   reuseImages?: boolean;
+  /**
+   * math-editor fork: SVG-side equivalent of `renderBlockContent`.
+   * Returns the SVG fragment to render inside each block element's
+   * frame. Forwarded to scene/export's exportToSvg.
+   */
+  renderBlockToSvg?: (
+    element: ExcalidrawBlockElement,
+  ) => SVGElement | null;
 }): Promise<SVGSVGElement> => {
   const { elements: restoredElements, appState: restoredAppState } = restore(
     { elements, appState },
@@ -190,6 +200,7 @@ export const exportToSvg = async ({
     renderEmbeddables,
     skipInliningFonts,
     reuseImages,
+    renderBlockToSvg,
   });
 };
 

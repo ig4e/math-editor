@@ -53,6 +53,16 @@ export type SVGRenderConfig = {
    * @default true
    */
   reuseImages: boolean;
+  /**
+   * math-editor fork: optional renderer for the content of block
+   * elements (math, text-block) in SVG export. Returns an SVG fragment
+   * (foreignObject, group, text…) that will be appended inside the
+   * block's rotation transform after the rounded-rect frame is drawn.
+   * Return null to draw frame only.
+   */
+  renderBlockToSvg?: (
+    element: import("../element/types").ExcalidrawBlockElement,
+  ) => SVGElement | null;
 };
 
 export type InteractiveCanvasRenderConfig = {

@@ -383,6 +383,7 @@ const bootstrap: Command[] = [
       const api = getExcalidrawAPI();
       if (!api) { ctx.getState().toast('Canvas not ready', 'warn'); return; }
       const { exportToSvg } = await import('@excalidraw/excalidraw');
+      const { renderBlockToSvg } = await import('../panels/canvas/blockToSvg');
       const elements = api.getSceneElements();
       const appState = api.getAppState();
       const files = api.getFiles();
@@ -391,6 +392,11 @@ const bootstrap: Command[] = [
         appState: { ...appState, exportBackground: true, exportWithDarkMode: true, exportEmbedScene: false },
         files,
         renderEmbeddables: false,
+        // Render math + text-block content (MathML for math, plain
+        // text for text-block) inside each block's framed rect. The
+        // resulting SVG is self-contained — no KaTeX CSS / fonts
+        // needed.
+        renderBlockToSvg,
       });
       const blob = new Blob([new XMLSerializer().serializeToString(svg)], { type: 'image/svg+xml' });
       const { downloadBlob } = await import('../share/pdf');
