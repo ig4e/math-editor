@@ -1,0 +1,26 @@
+{
+  "name": "@math-notebook/api",
+  "private": true,
+  "version": "0.2.0-dev",
+  "type": "module",
+  "description": "Edge functions (Cloudflare Pages + Vercel) — Wolfram CORS proxy, AI proxy, health probe.",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "ai": "^6.0.182",
+    "@ai-sdk/anthropic": "^3.0.77",
+    "@ai-sdk/cerebras": "^2.0.51",
+    "@ai-sdk/cohere": "^3.0.35",
+    "@ai-sdk/deepseek": "^2.0.35",
+    "@ai-sdk/google": "^3.0.73",
+    "@ai-sdk/groq": "^3.0.39",
+    "@ai-sdk/mistral": "^3.0.36",
+    "@ai-sdk/openai": "^3.0.63",
+    "@ai-sdk/perplexity": "^3.0.33",
+    "@ai-sdk/xai": "^3.0.89"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  }
+}

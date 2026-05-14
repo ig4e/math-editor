@@ -1,0 +1,19 @@
+{
+  "//": "Edge-function TS config. We use NodeNext so the `.js` extension on relative imports (e.g. `./_core.js`) resolves to its `.ts` source during typecheck — both Cloudflare Pages Functions and Vercel Edge bundle these files themselves at deploy time, so the only role of this tsconfig is to gate the source on `pnpm typecheck`.",
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2022", "DOM"],
+    "types": [],
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "allowJs": false
+  },
+  "include": ["./**/*.ts"],
+  "exclude": ["node_modules"]
+}

@@ -12,6 +12,46 @@ importers:
         specifier: ^5.7.3
         version: 5.9.3
 
+  api:
+    dependencies:
+      '@ai-sdk/anthropic':
+        specifier: ^3.0.77
+        version: 3.0.77(zod@4.4.3)
+      '@ai-sdk/cerebras':
+        specifier: ^2.0.51
+        version: 2.0.51(zod@4.4.3)
+      '@ai-sdk/cohere':
+        specifier: ^3.0.35
+        version: 3.0.35(zod@4.4.3)
+      '@ai-sdk/deepseek':
+        specifier: ^2.0.35
+        version: 2.0.35(zod@4.4.3)
+      '@ai-sdk/google':
+        specifier: ^3.0.73
+        version: 3.0.73(zod@4.4.3)
+      '@ai-sdk/groq':
+        specifier: ^3.0.39
+        version: 3.0.39(zod@4.4.3)
+      '@ai-sdk/mistral':
+        specifier: ^3.0.36
+        version: 3.0.36(zod@4.4.3)
+      '@ai-sdk/openai':
+        specifier: ^3.0.63
+        version: 3.0.63(zod@4.4.3)
+      '@ai-sdk/perplexity':
+        specifier: ^3.0.33
+        version: 3.0.33(zod@4.4.3)
+      '@ai-sdk/xai':
+        specifier: ^3.0.89
+        version: 3.0.89(zod@4.4.3)
+      ai:
+        specifier: ^6.0.182
+        version: 6.0.182(zod@4.4.3)
+    devDependencies:
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+
   apps/editor:
     dependencies:
       '@ai-sdk/anthropic':
