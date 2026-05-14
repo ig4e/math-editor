@@ -17,6 +17,8 @@ import {
   newFrameElement,
   newImageElement,
   newMagicFrameElement,
+  newMathElement,
+  newTextBlockElement,
   newTextElement,
 } from "../element/newElement";
 import type {
@@ -617,13 +619,27 @@ export const convertToExcalidrawElements = (
       }
       case "freedraw":
       case "iframe":
-      case "embeddable":
-      // math-editor fork: block elements pass through the skeleton
-      // unchanged; the editor's createBlock helper is responsible for
-      // shaping the skeleton with sensible defaults before the call.
-      case "math":
-      case "text-block": {
+      case "embeddable": {
         excalidrawElement = element;
+        break;
+      }
+      // math-editor fork: math + text-block run through their own
+      // factories (parallel to newEmbeddableElement above) so the
+      // resulting element carries every default Excalidraw expects
+      // on a generic-like element (strokeColor, backgroundColor,
+      // fillStyle, strokeWidth, strokeStyle, roughness, opacity,
+      // groupIds, frameId, roundness, boundElements, locked, link,
+      // version/seed/etc.). Previously the skeleton was used as the
+      // element directly, leaving those fields undefined — which
+      // crashed `SelectedShapeActions` (Actions.tsx) the moment a
+      // block was selected: `isTransparent(undefined)` reads
+      // `.length` of undefined.
+      case "math": {
+        excalidrawElement = newMathElement(element);
+        break;
+      }
+      case "text-block": {
+        excalidrawElement = newTextBlockElement(element);
         break;
       }
 

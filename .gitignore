@@ -32,3 +32,4 @@ dev-dist
 # logs
 *.log
 .git-commit-msg
+.playwright-mcp/

@@ -20,6 +20,8 @@ import type {
   ExcalidrawArrowElement,
   FixedSegment,
   ExcalidrawElbowArrowElement,
+  ExcalidrawMathElement,
+  ExcalidrawTextBlockElement,
 } from "./types";
 import {
   arrayToMap,
@@ -211,6 +213,63 @@ export const newMagicFrameElement = (
   );
 
   return frameElement;
+};
+
+// math-editor fork: factories for math + text-block. They funnel
+// through `_newElementBase` so the resulting element carries every
+// default Excalidraw expects on a generic-like element — strokeColor,
+// backgroundColor, fillStyle, strokeWidth, strokeStyle, roughness,
+// opacity, groupIds, frameId, roundness, boundElements, locked, link,
+// version/seed/etc. Without this funnel the math/text-block
+// `SelectedShapeActions` panel (Actions.tsx) crashes the moment a
+// block is selected: `isTransparent(element.backgroundColor)` reads
+// `.length` of undefined when the field was never set.
+export const newMathElement = (
+  opts: {
+    type: "math";
+    blockId: string;
+    latex: string;
+    fontSize: number;
+    note?: string;
+    showNote?: boolean;
+  } & ElementConstructorOpts,
+): NonDeleted<ExcalidrawMathElement> => {
+  return newElementWith(
+    {
+      ..._newElementBase<ExcalidrawMathElement>("math", opts),
+      type: "math",
+      blockId: opts.blockId,
+      latex: opts.latex,
+      fontSize: opts.fontSize,
+      note: opts.note,
+      showNote: opts.showNote,
+    },
+    {},
+  );
+};
+
+export const newTextBlockElement = (
+  opts: {
+    type: "text-block";
+    blockId: string;
+    text: string;
+    fontSize: number;
+    note?: string;
+    showNote?: boolean;
+  } & ElementConstructorOpts,
+): NonDeleted<ExcalidrawTextBlockElement> => {
+  return newElementWith(
+    {
+      ..._newElementBase<ExcalidrawTextBlockElement>("text-block", opts),
+      type: "text-block",
+      blockId: opts.blockId,
+      text: opts.text,
+      fontSize: opts.fontSize,
+      note: opts.note,
+      showNote: opts.showNote,
+    },
+    {},
+  );
 };
 
 /** computes element x/y offset based on textAlign/verticalAlign */

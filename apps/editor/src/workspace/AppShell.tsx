@@ -29,6 +29,7 @@ import '@excalidraw/excalidraw/index.scss';
 
 import { useStore } from '../state/store';
 import { useActiveSheet } from '../state/selectors';
+import type { Block } from '../state/types';
 import { CanvasMainMenu } from '../panels/canvas/CanvasMainMenu';
 import { CanvasFooter } from '../panels/canvas/CanvasFooter';
 import { CanvasWelcome } from '../panels/canvas/CanvasWelcome';
@@ -45,6 +46,44 @@ import './sidebar.css';
 
 export const SIDEBAR_NAME = 'math-notebook';
 const SCENE_DEBOUNCE_MS = 250;
+
+// Module-level, stable reference so React.memo'd <Excalidraw> doesn't
+// see a new UIOptions object every render. (UIOptions is excluded from
+// areEqual anyway, but keeping it stable is consistent with how the
+// other props flow.)
+const EXCALIDRAW_UI_OPTIONS = {
+  canvasActions: {
+    changeViewBackgroundColor: true,
+    clearCanvas: true,
+    export: { saveFileToDisk: true },
+    loadScene: true,
+    saveToActiveFile: true,
+    toggleTheme: false,
+    saveAsImage: true,
+  },
+  // Keep the dock preference docked so Excalidraw's library and our
+  // panels sidebar can sit side-by-side without one squishing the
+  // other on wide viewports.
+  dockedSidebarBreakpoint: 800,
+} as const;
+
+/** Shallow content compare for block arrays. Same length, same id at
+ *  each index, and each block's primitive fields all === . Returns
+ *  true when the next mirror would be a no-op so we can skip the
+ *  store update and break the onChange feedback loop. */
+function blocksAreEqual(a: readonly Block[], b: readonly Block[]): boolean {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    const x = a[i]!;
+    const y = b[i]!;
+    if (x.id !== y.id || x.type !== y.type || x.x !== y.x || x.y !== y.y) return false;
+    if (x.fontSize !== y.fontSize || x.note !== y.note || x.showNote !== y.showNote) return false;
+    if (x.type === 'math' && y.type === 'math' && x.latex !== y.latex) return false;
+    if (x.type === 'text' && y.type === 'text' && x.text !== y.text) return false;
+  }
+  return true;
+}
 
 export function AppShell() {
   const activeSheetId = useStore((s) => s.activeSheetId);
@@ -75,6 +114,28 @@ export function AppShell() {
       : undefined;
   });
 
+  // Pre-load our curated math-diagram templates as Excalidraw's
+  // default library on first run. We fetch the lib JSON (a single
+  // file under public/), parse it, and seed the Library panel. The
+  // PWA precaches the file so this works offline after the first
+  // warm load. Declared up-front so `excalidrawInitialData` below
+  // can read it.
+  const [libraryItems, setLibraryItems] = useState<unknown[] | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch('/math-templates.excalidrawlib');
+        if (!res.ok) return;
+        const data = await res.json() as { libraryItems?: unknown[] };
+        if (!cancelled && Array.isArray(data.libraryItems)) {
+          setLibraryItems(data.libraryItems);
+        }
+      } catch { /* offline / not deployed — ignore */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   const debounceTimer = useRef<number | null>(null);
   const persistScene = useCallback(() => {
     if (!apiRef.current) return;
@@ -94,28 +155,61 @@ export function AppShell() {
   // write-back from store → scene during this hook — every mutation
   // goes through panels/canvas/blockElements.ts -> api.updateScene,
   // which feeds back here on the next onChange.
+  //
+  // Idempotent on purpose: Excalidraw fires onChange after *every*
+  // componentDidUpdate, even when the scene didn't actually change.
+  // If we blindly called setSheetBlocks each time, zustand would
+  // dispatch a new sheet object, AppShell would re-render, its
+  // children prop into <Excalidraw> would be a new JSX tree, the
+  // React.memo equality check (which always fails on children !==)
+  // would let Excalidraw re-render, componentDidUpdate fires
+  // onChange again, → infinite loop. The shallow compare below kills
+  // that cycle.
   const mirrorBlocks = useCallback(() => {
     const api = apiRef.current;
     if (!api) return;
-    const blocks = [];
+    const next: Block[] = [];
     for (const el of api.getSceneElements()) {
       if (isBlockElement(el)) {
-        blocks.push(blockFromElement(el as ExcalidrawMathElement | ExcalidrawTextBlockElement));
+        next.push(blockFromElement(el as ExcalidrawMathElement | ExcalidrawTextBlockElement));
       }
     }
-    setSheetBlocks(activeSheetId, blocks);
+    const prev = useStore.getState().sheets[activeSheetId]?.blocks;
+    if (prev && blocksAreEqual(prev, next)) return;
+    setSheetBlocks(activeSheetId, next);
   }, [activeSheetId, setSheetBlocks]);
 
+  // Read the latest mirrorBlocks via a ref so the imperative
+  // excalidrawAPI / renderTopRightUI callbacks below can have empty
+  // deps without going stale. Each render writes the latest closure
+  // into the ref; the callback uses ref.current.
+  const mirrorBlocksRef = useRef(mirrorBlocks);
+  mirrorBlocksRef.current = mirrorBlocks;
+
+  const persistSceneRef = useRef(persistScene);
+  persistSceneRef.current = persistScene;
+
   const onChange = useCallback(() => {
-    mirrorBlocks();
+    mirrorBlocksRef.current();
     if (debounceTimer.current !== null) window.clearTimeout(debounceTimer.current);
-    debounceTimer.current = window.setTimeout(persistScene, SCENE_DEBOUNCE_MS);
-  }, [persistScene, mirrorBlocks]);
+    debounceTimer.current = window.setTimeout(() => persistSceneRef.current(), SCENE_DEBOUNCE_MS);
+  }, []);
 
   useEffect(() => () => {
     if (debounceTimer.current !== null) window.clearTimeout(debounceTimer.current);
-    persistScene();
-  }, [persistScene]);
+    persistSceneRef.current();
+  }, []);
+
+  // Stable; capturing the latest setExcalidrawAPI + mirrorBlocks via
+  // module-level state / refs. Inline `excalidrawAPI={(api) => ...}`
+  // would change identity every AppShell render — React.memo's
+  // shallow-compare would fail on that prop, forcing Excalidraw to
+  // re-render, triggering componentDidUpdate, firing onChange, → loop.
+  const handleExcalidrawAPI = useCallback((api: ExcalidrawImperativeAPI) => {
+    apiRef.current = api;
+    setExcalidrawAPI(api);
+    mirrorBlocksRef.current();
+  }, []);
 
   const renderBlockContent = useCallback(
     (element: NonDeleted<ExcalidrawBlockElement>) => (
@@ -123,6 +217,36 @@ export function AppShell() {
     ),
     [],
   );
+
+  // Stable renderTopRightUI — same reason as handleExcalidrawAPI.
+  const renderTopRightUI = useCallback(() => (
+    <CanvasTopRight apiRef={apiRef} />
+  ), []);
+
+  // Stable Sidebar onStateChange — same reason.
+  const handleSidebarStateChange = useCallback((state: { tab?: string | null } | null) => {
+    setActiveSidebarTab(state?.tab ?? null);
+  }, [setActiveSidebarTab]);
+
+  // Memo initialData so it doesn't allocate a new object every render.
+  // The Excalidraw component's areEqual EXCLUDES initialData from its
+  // shallow compare, so this is correctness-irrelevant for the memo
+  // gate — but it also stops React from telling the constructor that
+  // initialData changed identity, which could re-run setup-side work
+  // somewhere downstream.
+  const excalidrawInitialData = useMemo(() => ({
+    ...(initialData ?? {}),
+    appState: {
+      ...((initialData?.['appState'] as object) ?? {}),
+      theme: 'dark' as const,
+      openSidebar: activeSidebarTab
+        ? { name: SIDEBAR_NAME, tab: activeSidebarTab }
+        : null,
+    },
+    ...(libraryItems
+      ? { libraryItems: libraryItems as never }
+      : {}),
+  }), [initialData, activeSidebarTab, libraryItems]);
 
   // Imperative sidebar toggle for commands / panel-driven opens. We
   // expose it through the same inject module as the Excalidraw API.
@@ -137,67 +261,17 @@ export function AppShell() {
     return () => setSidebarToggler(null);
   }, [setActiveSidebarTab]);
 
-  // Pre-load our curated math-diagram templates as Excalidraw's
-  // default library on first run. We fetch the lib JSON (a single
-  // file under public/), parse it, and seed the Library panel. The
-  // PWA precaches the file so this works offline after the first
-  // warm load.
-  const [libraryItems, setLibraryItems] = useState<unknown[] | null>(null);
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      try {
-        const res = await fetch('/math-templates.excalidrawlib');
-        if (!res.ok) return;
-        const data = await res.json() as { libraryItems?: unknown[] };
-        if (!cancelled && Array.isArray(data.libraryItems)) {
-          setLibraryItems(data.libraryItems);
-        }
-      } catch { /* offline / not deployed — ignore */ }
-    })();
-    return () => { cancelled = true; };
-  }, []);
-
   return (
     <div className="absolute inset-0 bg-app">
       <Excalidraw
         key={activeSheetId}
-        excalidrawAPI={(api) => { apiRef.current = api; setExcalidrawAPI(api); mirrorBlocks(); }}
-        initialData={{
-          ...(initialData ?? {}),
-          appState: {
-            ...((initialData?.['appState'] as object) ?? {}),
-            theme: 'dark',
-            // Pre-open the sidebar so the panel rail is visible on load.
-            openSidebar: activeSidebarTab
-              ? { name: SIDEBAR_NAME, tab: activeSidebarTab }
-              : null,
-          },
-          // Seed Excalidraw's Library panel with our math-diagram
-          // templates so they show up next to the user's saved
-          // shapes. Items will hydrate after the library JSON loads.
-          ...(libraryItems
-            ? { libraryItems: libraryItems as never }
-            : {}),
-        }}
+        excalidrawAPI={handleExcalidrawAPI}
+        initialData={excalidrawInitialData}
         onChange={onChange}
         theme="dark"
         renderBlockContent={renderBlockContent}
-        renderTopRightUI={() => <CanvasTopRight apiRef={apiRef} />}
-        UIOptions={{
-          canvasActions: {
-            changeViewBackgroundColor: true,
-            clearCanvas: true,
-            export: { saveFileToDisk: true },
-            loadScene: true,
-            saveToActiveFile: true,
-            toggleTheme: false,
-            saveAsImage: true,
-          },
-          // Excalidraw's library sidebar uses 'library' as its name.
-          // Keeping the dock pref docked keeps both side-by-side.
-          dockedSidebarBreakpoint: 800,
-        }}
+        renderTopRightUI={renderTopRightUI}
+        UIOptions={EXCALIDRAW_UI_OPTIONS}
       >
         <CanvasMainMenu />
         <CanvasFooter />
@@ -206,9 +280,7 @@ export function AppShell() {
         <Sidebar
           name={SIDEBAR_NAME}
           docked
-          onStateChange={(state) => {
-            setActiveSidebarTab(state?.tab ?? null);
-          }}
+          onStateChange={handleSidebarStateChange}
         >
           <Sidebar.Header />
           <Sidebar.Tabs>
