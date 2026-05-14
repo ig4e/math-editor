@@ -80,9 +80,26 @@ export function useEmbeddableSync(
   const lastWritten = useRef(new Map<string, { x: number; y: number }>());
 
   // store → scene
+  //
+  // The previous version of this sync wrote back to the scene whenever
+  // `sheet` changed — including the re-renders triggered BY our own
+  // scene→store pull below. During a drag, Excalidraw fires onChange
+  // many times per frame. Each tick: pull updates store → React commits
+  // → effect runs → element x/y compared against the store value we
+  // just received. In the gap between the commit and the effect,
+  // Excalidraw has often advanced one frame further; the comparison
+  // mismatches, and we write the *old* (1-frame-stale) position back
+  // onto the live element. That's the jitter the user saw.
+  //
+  // Fix: while Excalidraw is actively dragging selected elements, the
+  // scene is the source-of-truth. We only push store → scene when
+  // (a) blocks were created/deleted in the store (count changed), or
+  // (b) the scene is idle (no drag in progress).
   useEffect(() => {
     const api = apiRef.current;
     if (!api || !sheet) return;
+    const appState = api.getAppState();
+    if (appState.selectedElementsAreBeingDragged) return;
     syncEmbeddablesFromBlocks(api, sheet.blocks, lastWritten.current);
   }, [apiRef, sheet]);
 
@@ -123,6 +140,12 @@ function syncEmbeddablesFromBlocks(
     const block = blocks.find((b) => b.id === id);
     if (!block) return el;
     if (el.x === block.x && el.y === block.y) return el;
+    // Belt-and-braces: if the block position equals the position we
+    // last pushed FROM the scene to the store, the store change is a
+    // stale echo of a drag event — don't write back, or we fight the
+    // live drag by one frame.
+    const seen = lastWritten.get(id);
+    if (seen && seen.x === block.x && seen.y === block.y) return el;
     lastWritten.set(id, { x: block.x, y: block.y });
     needsUpdate = true;
     return { ...el, x: block.x, y: block.y } as ExcalidrawElement;

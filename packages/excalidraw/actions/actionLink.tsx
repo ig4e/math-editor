@@ -3,10 +3,8 @@ import { LinkIcon } from "../components/icons";
 import { ToolButton } from "../components/ToolButton";
 import { isEmbeddableElement } from "../element/typeChecks";
 import { t } from "../i18n";
-import { KEYS } from "../keys";
 import { getSelectedElements } from "../scene";
 import { CaptureUpdateAction } from "../store";
-import { getShortcutKey } from "../utils";
 import { register } from "./register";
 
 export const actionLink = register({
@@ -29,7 +27,10 @@ export const actionLink = register({
     };
   },
   trackEvent: { category: "hyperlink", action: "click" },
-  keyTest: (event) => event[KEYS.CTRL_OR_CMD] && event.key === KEYS.K,
+  // Upstream binds Ctrl/Cmd+K to "add hyperlink". The math-editor app
+  // owns Ctrl+K for its command palette (cmdk), so the keyTest is
+  // removed — the action is still reachable from menus/context-menu.
+  // The block-embed link-hint UI is hidden too (see Hyperlink.tsx).
   predicate: (elements, appState) => {
     const selectedElements = getSelectedElements(elements, appState);
     return selectedElements.length === 1;
@@ -42,11 +43,11 @@ export const actionLink = register({
         type="button"
         icon={LinkIcon}
         aria-label={t(getContextMenuLabel(elements, appState))}
-        title={`${
+        title={
           isEmbeddableElement(elements[0])
             ? t("labels.link.labelEmbed")
             : t("labels.link.label")
-        } - ${getShortcutKey("CtrlOrCmd+K")}`}
+        }
         onClick={() => updateData(null)}
         selected={selectedElements.length === 1 && !!selectedElements[0].link}
       />

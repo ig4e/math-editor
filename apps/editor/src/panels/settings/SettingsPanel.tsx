@@ -1,7 +1,11 @@
-// The Settings panel. Tabs along the left: Appearance / Keybinds /
+// The Settings panel. Tabs across the top: Appearance / Keybinds /
 // Layout / API Keys / Curriculum / Storage / Privacy. Phase 1 wires
 // up Appearance + Keybinds + Layout; the others are stubs filled in
 // by later phases (P6 for keys, P16 for curriculum).
+//
+// We use horizontal tabs rather than the vertical variant because the
+// panel mounts inside Excalidraw's right sidebar, which is ~300–440 px
+// wide. A vertical 176 px tab rail leaves only a sliver for content.
 
 import { PanelHeader, Tabs, EmptyState } from '../../components/common';
 import type { TabItem } from '../../components/common';
@@ -77,7 +81,7 @@ export default function SettingsPanel() {
     <div className="flex flex-col h-full bg-surface">
       <PanelHeader title="Settings" icon="settings" />
       <div className="flex-1 overflow-hidden">
-        <Tabs items={ITEMS} defaultValue={initial} orientation="vertical" />
+        <Tabs items={ITEMS} defaultValue={initial} orientation="horizontal" />
       </div>
     </div>
   );

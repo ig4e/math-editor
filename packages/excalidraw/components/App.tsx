@@ -1619,7 +1619,22 @@ class App extends React.Component<AppProps, AppState> {
                         {selectedElements.length === 1 &&
                           this.state.openDialog?.name !==
                             "elementLinkSelector" &&
-                          this.state.showHyperlinkPopup && (
+                          this.state.showHyperlinkPopup &&
+                          // math-editor fork: suppress the hyperlink hint
+                          // for block embeddables (links of the form
+                          // `mathblock://...` / `textblock://...`).
+                          // Those links are an internal addressing scheme,
+                          // not a user-facing URL. Stage C makes math /
+                          // text blocks first-class element types and the
+                          // `link` field disappears here entirely.
+                          !(
+                            firstSelectedElement.link?.startsWith(
+                              "mathblock://",
+                            ) ||
+                            firstSelectedElement.link?.startsWith(
+                              "textblock://",
+                            )
+                          ) && (
                             <Hyperlink
                               key={firstSelectedElement.id}
                               element={firstSelectedElement}
@@ -6029,8 +6044,20 @@ class App extends React.Component<AppProps, AppState> {
     if (isEraserActive(this.state)) {
       return;
     }
+    // math-editor fork: treat block embeddables (mathblock:// /
+    // textblock://) as if they had no link for the hover-hint
+    // pipeline. The link IS the internal addressing scheme — we don't
+    // want the URL chrome, cursor change, or "info" popup. Stage C
+    // moves these to a real element type and the special-case goes
+    // away.
+    const hitIsBlockEmbed = !!(
+      this.hitLinkElement?.link?.startsWith("mathblock://") ||
+      this.hitLinkElement?.link?.startsWith("textblock://")
+    );
+
     if (
       this.hitLinkElement &&
+      !hitIsBlockEmbed &&
       !this.state.selectedElementIds[this.hitLinkElement.id]
     ) {
       setCursor(this.interactiveCanvas, CURSOR_TYPE.POINTER);
@@ -6041,8 +6068,13 @@ class App extends React.Component<AppProps, AppState> {
       );
     } else {
       hideHyperlinkToolip();
+      const hoverIsBlockEmbed = !!(
+        hitElement?.link?.startsWith("mathblock://") ||
+        hitElement?.link?.startsWith("textblock://")
+      );
       if (
         hitElement &&
+        !hoverIsBlockEmbed &&
         (hitElement.link || isEmbeddableElement(hitElement)) &&
         this.state.selectedElementIds[hitElement.id] &&
         !this.state.contextMenu &&

@@ -35,7 +35,12 @@ export function Tabs({ value, defaultValue, onValueChange, items, orientation = 
         className={cx(
           isVert
             ? 'flex flex-col gap-0.5 p-2 border-r border-border w-44 shrink-0'
-            : 'flex items-center gap-0.5 px-2 h-9 border-b border-border',
+            // Horizontal: scroll the trigger row when it's too narrow
+            // for all tab labels (e.g. inside Excalidraw's ~300 px
+            // sidebar). `min-h-9` keeps the row aligned with the
+            // border-b while allowing the buttons to shrink without
+            // being squeezed into the next line.
+            : 'flex items-center gap-0.5 px-2 min-h-9 border-b border-border overflow-x-auto scrollbar-thin',
         )}
       >
         {items.map((it) => (
@@ -43,8 +48,8 @@ export function Tabs({ value, defaultValue, onValueChange, items, orientation = 
             key={it.value}
             value={it.value}
             className={cx(
-              'inline-flex items-center gap-2 text-sm rounded-md',
-              isVert ? 'h-8 px-2.5 justify-start' : 'h-7 px-2.5',
+              'inline-flex items-center gap-2 text-sm rounded-md whitespace-nowrap',
+              isVert ? 'h-8 px-2.5 justify-start' : 'h-7 px-2.5 shrink-0',
               'text-fg-2 hover:bg-surface-2',
               'data-[state=active]:bg-accent-bg data-[state=active]:text-accent',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-app',
