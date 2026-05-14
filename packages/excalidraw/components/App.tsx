@@ -1358,14 +1358,26 @@ class App extends React.Component<AppProps, AppState> {
                 width: `${el.width}px`,
                 height: `${el.height}px`,
                 opacity,
-                // When unselected, pointer events go to the canvas so
-                // the user can grab / drag the element. When selected
-                // (i.e. the user wants to type), we enable pointer
-                // events on the overlay.
-                pointerEvents: isSelected
-                  ? POINTER_EVENTS.enabled
-                  : POINTER_EVENTS.disabled,
+                // The container is ALWAYS pointer-events: none — drag /
+                // resize / selection / toolbar clicks all need to reach
+                // Excalidraw's canvas + the SelectionToolbar that sits
+                // above. The host's `renderBlockContent` re-enables
+                // pointer events on the inner editable surfaces (the
+                // <math-field>, contenteditable, note, etc.) so the
+                // user types by clicking directly on them. Clicks on
+                // the empty frame area still hit the canvas → block
+                // gets selected and dragged like any other shape.
+                //
+                // Compare `renderEmbeddables` above (~line 1245): it
+                // uses an explicit `activeEmbeddable.state === "active"`
+                // gate so iframes don't steal scroll until the user
+                // opts in. We'd do the same here if blocks ever grow
+                // a "double-click to enter edit mode" gesture; for now
+                // single-click select + click-on-content edit is
+                // enough.
+                pointerEvents: POINTER_EVENTS.disabled,
               }}
+              data-selected={isSelected || undefined}
             >
               <div
                 style={{
@@ -1373,11 +1385,8 @@ class App extends React.Component<AppProps, AppState> {
                   height: "100%",
                   transform: `rotate(${el.angle}rad)`,
                   transformOrigin: "center",
-                  // Stop wheel / key events from reaching the canvas
-                  // while interacting with the block content.
+                  pointerEvents: POINTER_EVENTS.disabled,
                 }}
-                onWheel={(e) => isSelected && e.stopPropagation()}
-                onKeyDown={(e) => isSelected && e.stopPropagation()}
               >
                 {renderBlockContent(el, this.state)}
               </div>
