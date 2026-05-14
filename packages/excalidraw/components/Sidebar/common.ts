@@ -26,6 +26,17 @@ export type SidebarProps<P = {}> = {
   onDock?: (docked: boolean) => void;
   docked?: boolean;
   className?: string;
+  /**
+   * math-editor fork: if provided, the sidebar renders a drag handle on
+   * its left edge. The handle calls this with the new px width during
+   * drag — host owns the width state and threads it back via the
+   * `sidebarWidth` prop on <Excalidraw>.
+   */
+  onResize?: (widthPx: number) => void;
+  /** Minimum width the resize handle will report. */
+  minWidth?: number;
+  /** Maximum width the resize handle will report. */
+  maxWidth?: number;
   // NOTE sidebars we use internally inside the editor must have this flag set.
   // It indicates that this sidebar should have lower precedence over host
   // sidebars, if both are open.

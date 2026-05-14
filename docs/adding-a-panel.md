@@ -1,8 +1,8 @@
 # Adding a panel
 
-A "panel" is one of the tabs in Excalidraw's side `<Sidebar>` — Solver, Graph 2D, AI chat, Settings, etc. Adding one is three steps and never touches the workspace shell.
+A "panel" is one of the tabs in Excalidraw's `<DefaultSidebar>` — Solver, Graph 2D, AI chat, Settings, etc. They share one rail with Excalidraw's built-in Library and Search tabs. Adding one is three steps and never touches the workspace shell.
 
-> **Architectural note (v3+):** the app shell IS Excalidraw. Panels are rendered as `<Sidebar.Tab>` children inside `<AppShell>`. There is no FlexLayout, no separate "workspace" surface — the canvas is the whole window, and the side panel slides in over the right edge when opened. See [`architecture.md`](./architecture.md#the-shell-is-excalidraw).
+> **Architectural note (v3+):** the app shell IS Excalidraw. We do not stand up a second sidebar — host panels register tab triggers into `<DefaultSidebar.TabTriggers>` (a tunnel into Excalidraw's own sidebar header) and their content lands as `<Sidebar.Tab>` children inside the same `<DefaultSidebar>`. There is no FlexLayout, no separate "workspace" surface — the canvas is the whole window, and the side panel slides in over the right edge when opened. The rail width is user-resizable (drag handle on the left edge of the sidebar) and persisted as `sidebarWidth` in the workspace slice. See [`architecture.md`](./architecture.md#the-shell-is-excalidraw).
 
 ## The contract
 
@@ -29,7 +29,7 @@ export interface Panel {
 export function registerPanel(panel: Panel): void;
 ```
 
-`<AppShell>` reads `getAllPanels()` and renders each as a `<Sidebar.Tab>` + a trigger icon. Order of registration in `src/panels/index.ts` controls the order of the tab triggers.
+`<AppShell>` reads `getAllPanels()` and renders each as a `<Sidebar.Tab>` (content) + a `<Sidebar.TabTrigger>` (icon) injected through `<DefaultSidebar.TabTriggers>`. Order of registration in `src/panels/index.ts` controls the order of the tab triggers, which always sit to the right of the built-in Library / Search icons.
 
 ## Three-step recipe
 
@@ -97,7 +97,7 @@ To make the panel openable from the command palette and a keybind, the bootstrap
 }
 ```
 
-`ctx.workspace.openPanel(id)` writes the active tab into the workspace slice **and** calls Excalidraw's `toggleSidebar({ name: 'math-notebook', tab: id, force: true })` so the sidebar flips to the new panel.
+`ctx.workspace.openPanel(id)` writes the active tab into the workspace slice **and** calls Excalidraw's `toggleSidebar({ name: 'default', tab: id, force: true })` so the shared sidebar flips to the new panel. `'default'` is `DEFAULT_SIDEBAR.name` from `@excalidraw/excalidraw`; the built-in `library` and `search` tab IDs route to the same sidebar.
 
 ## Conventions to follow
 
@@ -115,7 +115,8 @@ To make the panel openable from the command palette and a keybind, the bootstrap
 - Importing the panel's component directly from anywhere outside `workspace/AppShell`. Lazy-load via the registry.
 - Rolling your own button / dropdown / dialog. Compose from `components/common/`.
 - Setting your own theme colors. Tokens are in `index.css`.
-- Trying to "dock" the panel anywhere except inside Excalidraw's sidebar — there is no other layout system.
+- Trying to "dock" the panel anywhere except inside Excalidraw's default sidebar — there is no other layout system, and no second sidebar.
+- Hard-coding sidebar width or assuming pixel-perfect layout. The rail width is owned by `useStore(s => s.sidebarWidth)` (drag-resizable, default 460, clamped 320–900) and flows into Excalidraw via the `sidebarWidth` prop.
 
 ## Programmatic open from anywhere
 

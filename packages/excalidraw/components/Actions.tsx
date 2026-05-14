@@ -287,7 +287,7 @@ export const ShapesSwitcher = ({
   const laserToolSelected = activeTool.type === "laser";
   const embeddableToolSelected = activeTool.type === "embeddable";
 
-  const { TTDDialogTriggerTunnel } = useTunnels();
+  const { TTDDialogTriggerTunnel, ToolbarExtrasTunnel } = useTunnels();
 
   return (
     <>
@@ -414,6 +414,11 @@ export const ShapesSwitcher = ({
           )}
         </DropdownMenu.Content>
       </DropdownMenu>
+      {/* math-editor fork: host-injected tool buttons appended to the
+          end of the shape toolbar (e.g. Math + Text block). Rendered
+          here so they share the same ToolButton chrome and Hotkey
+          ergonomics as the shape tools. */}
+      <ToolbarExtrasTunnel.Out />
     </>
   );
 };

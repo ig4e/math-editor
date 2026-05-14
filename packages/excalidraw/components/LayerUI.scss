@@ -111,6 +111,15 @@
       }
     }
 
+    // math-editor fork: lay out the footer-left wrapper as a row so
+    // any tunneled host content sits to the right of the zoom / undo
+    // Stack.Col without wrapping.
+    .layer-ui__wrapper__footer-left {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+    }
+
     .layer-ui__wrapper__footer-right {
       margin-top: auto;
       margin-bottom: auto;

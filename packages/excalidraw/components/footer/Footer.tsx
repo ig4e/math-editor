@@ -25,7 +25,8 @@ const Footer = ({
   showExitZenModeBtn: boolean;
   renderWelcomeScreen: boolean;
 }) => {
-  const { FooterCenterTunnel, WelcomeScreenHelpHintTunnel } = useTunnels();
+  const { FooterCenterTunnel, FooterLeftTunnel, WelcomeScreenHelpHintTunnel } =
+    useTunnels();
 
   const device = useDevice();
   const showFinalize =
@@ -69,6 +70,11 @@ const Footer = ({
             )}
           </Section>
         </Stack.Col>
+        {/* math-editor fork: host-injected cluster sitting beside the
+            zoom/undo Island so a status strip (block count, AI
+            provider, Cmd+K hint, etc.) lines up vertically with the
+            native footer pills instead of floating in the center. */}
+        <FooterLeftTunnel.Out />
       </div>
       <FooterCenterTunnel.Out />
       <div

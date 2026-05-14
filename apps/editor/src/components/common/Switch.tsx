@@ -1,7 +1,11 @@
-// Radix Switch, themed.
+// Pass-through to Excalidraw's native Switch so panels share its
+// chrome. The local component keeps the older
+// `onCheckedChange` / `ariaLabel` API so call sites don't need to
+// migrate in lockstep.
 
-import * as RS from '@radix-ui/react-switch';
-import { cx } from '../../utils/cx';
+import { Switch as XSwitch } from '@excalidraw/excalidraw';
+
+let switchAutoIdSeq = 0;
 
 interface Props {
   checked?: boolean;
@@ -12,28 +16,17 @@ interface Props {
   ariaLabel?: string;
 }
 
-export function Switch({ checked, onCheckedChange, disabled, id, ariaLabel }: Props) {
+export function Switch({ checked = false, onCheckedChange, disabled, id, ariaLabel }: Props) {
+  // Excalidraw's Switch requires a stable `name`; derive one from the
+  // id prop or fall back to a per-instance counter.
+  const name = id ?? `switch-${++switchAutoIdSeq}`;
   return (
-    <RS.Root
-      id={id}
+    <XSwitch
+      name={name}
+      title={ariaLabel}
       checked={checked}
-      onCheckedChange={onCheckedChange}
+      onChange={onCheckedChange ?? (() => undefined)}
       disabled={disabled}
-      aria-label={ariaLabel}
-      className={cx(
-        'inline-flex items-center w-9 h-5 rounded-full transition-colors duration-150 ease-out',
-        'bg-border data-[state=checked]:bg-accent',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app',
-        'disabled:opacity-60 disabled:cursor-not-allowed',
-      )}
-    >
-      <RS.Thumb
-        className={cx(
-          'block w-4 h-4 bg-surface rounded-full shadow-pill',
-          'translate-x-0.5 data-[state=checked]:translate-x-[18px]',
-          'transition-transform duration-150 ease-out',
-        )}
-      />
-    </RS.Root>
+    />
   );
 }

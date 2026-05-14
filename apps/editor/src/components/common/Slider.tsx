@@ -1,5 +1,7 @@
-// Radix Slider, themed. Single-value only (no range) — the Variables
-// panel sliders are the primary consumer.
+// Radix Slider styled to match Excalidraw's native range chrome —
+// same `--color-slider-track` rail, `--color-primary` thumb. Single-
+// value only (no range) — the Variables panel sliders are the primary
+// consumer.
 
 import * as RS from '@radix-ui/react-slider';
 import { cx } from '../../utils/cx';
@@ -34,13 +36,23 @@ export function Slider({
         className,
       )}
     >
-      <RS.Track className="bg-border h-1 grow rounded-full relative">
-        <RS.Range className="absolute bg-accent h-full rounded-full" />
+      <RS.Track
+        style={{ background: 'var(--button-bg, var(--color-surface-low))' }}
+        className="h-1 grow rounded-full relative"
+      >
+        <RS.Range
+          style={{ background: 'var(--color-slider-track, var(--color-primary))' }}
+          className="absolute h-full rounded-full"
+        />
       </RS.Track>
       <RS.Thumb
+        style={{
+          background: 'var(--island-bg-color, #fff)',
+          borderColor: 'var(--color-primary)',
+        }}
         className={cx(
-          'block w-4 h-4 bg-surface border-2 border-accent rounded-full shadow-pill',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app',
+          'block w-4 h-4 border-2 rounded-full shadow-pill',
+          'focus-visible:outline-none',
         )}
       />
     </RS.Root>

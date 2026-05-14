@@ -13,6 +13,8 @@ import { defaultLang } from "./i18n";
 import { DEFAULT_UI_OPTIONS } from "./constants";
 import { EditorJotaiProvider, editorJotaiStore } from "./editor-jotai";
 import Footer from "./components/footer/FooterCenter";
+import FooterLeft from "./components/footer/FooterLeft";
+import ToolbarExtras from "./components/ToolbarExtras";
 import MainMenu from "./components/main-menu/MainMenu";
 import WelcomeScreen from "./components/welcome-screen/WelcomeScreen";
 import LiveCollaborationTrigger from "./components/live-collaboration/LiveCollaborationTrigger";
@@ -59,6 +61,7 @@ const ExcalidrawBase = (props: ExcalidrawProps) => {
     renderBlockContent,
     aiEnabled,
     showDeprecatedFonts,
+    sidebarWidth,
   } = props;
 
   const canvasActions = props.UIOptions?.canvasActions;
@@ -150,6 +153,7 @@ const ExcalidrawBase = (props: ExcalidrawProps) => {
           renderBlockContent={renderBlockContent}
           aiEnabled={aiEnabled !== false}
           showDeprecatedFonts={showDeprecatedFonts}
+          sidebarWidth={sidebarWidth}
         >
           {children}
         </App>
@@ -280,6 +284,11 @@ export {
 export { Sidebar } from "./components/Sidebar/Sidebar";
 export { Button } from "./components/Button";
 export { Footer };
+// math-editor fork: extra slots for the native chrome — host status
+// strips in the footer-left cluster, host tool buttons in the shape
+// toolbar.
+export { FooterLeft };
+export { ToolbarExtras };
 export { MainMenu };
 export { useDevice } from "./components/App";
 export { WelcomeScreen };
@@ -289,6 +298,31 @@ export { Stats } from "./components/Stats";
 export { DefaultSidebar } from "./components/DefaultSidebar";
 export { TTDDialog } from "./components/TTDDialog/TTDDialog";
 export { TTDDialogTrigger } from "./components/TTDDialog/TTDDialogTrigger";
+
+// math-editor fork: low-level UI primitives + sidebar identifiers so host
+// app surfaces (status strip, tab triggers, etc.) can render with the same
+// chrome as Excalidraw's built-in buttons.
+export { Island } from "./components/Island";
+export { default as Stack } from "./components/Stack";
+export { ToolButton } from "./components/ToolButton";
+export { ButtonIcon } from "./components/ButtonIcon";
+export { FilledButton } from "./components/FilledButton";
+export { CheckboxItem } from "./components/CheckboxItem";
+export { TextField } from "./components/TextField";
+export { RadioGroup } from "./components/RadioGroup";
+export { Switch } from "./components/Switch";
+export { Range } from "./components/Range";
+export { Card } from "./components/Card";
+export { default as Spinner } from "./components/Spinner";
+export { Tooltip } from "./components/Tooltip";
+export { Section } from "./components/Section";
+export { Dialog } from "./components/Dialog";
+export { default as DropdownMenu } from "./components/dropdownMenu/DropdownMenu";
+export {
+  DEFAULT_SIDEBAR,
+  LIBRARY_SIDEBAR_TAB,
+  CANVAS_SEARCH_TAB,
+} from "./constants";
 
 export { normalizeLink } from "./data/url";
 export { zoomToFitBounds } from "./actions/actionCanvas";

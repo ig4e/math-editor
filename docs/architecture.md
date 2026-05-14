@@ -42,7 +42,7 @@ One Zustand store, slice-composed via the `AppSlice<T>` mutator pattern:
 | `blocksSlice` | math + text blocks per sheet |
 | `scenesSlice` | per-sheet Excalidraw scene (elements + appState + files) |
 | `selectionSlice` | block + scene selection bridge |
-| `workspaceSlice` | just `activeSidebarTab` — Excalidraw's `openSidebar` is the live state, we persist the user's last pick |
+| `workspaceSlice` | `activeSidebarTab` (user's last-picked tab, mirrored into Excalidraw's `openSidebar`) + `sidebarWidth` (drag-resized rail width in px, clamped 320–900) |
 | `keysSlice` | BYOK API keys (encrypted at rest) |
 | `prefsSlice` | font scale, tablet mode, curriculum, showSteps, default provider/model |
 | `toastsSlice` | transient toast queue |
@@ -68,7 +68,7 @@ interface Panel {
 }
 ```
 
-`<Workspace>` is a flexlayout `<Layout>` whose factory looks up panel records by `id`. See [`adding-a-panel.md`](./adding-a-panel.md).
+`<AppShell>` mounts a single `<Excalidraw>` instance with `<DefaultSidebar>` as the right rail. Every registered panel becomes one `<Sidebar.TabTrigger>` (icon, injected via `<DefaultSidebar.TabTriggers>`) + one `<Sidebar.Tab>` (lazy content) sharing the same `default` sidebar as Excalidraw's built-in Library and Search tabs. See [`adding-a-panel.md`](./adding-a-panel.md).
 
 ### Command registry
 
@@ -131,7 +131,7 @@ A generic `openai-compat` adapter covers DeepSeek / Qwen / Moonshot / Zhipu / et
 src/
 ├── main.tsx · App.tsx · index.css · mathlive.d.ts
 │
-├── workspace/                       # flexlayout host + presets + registry
+├── workspace/                       # AppShell (Excalidraw host) + PanelRegistry
 ├── panels/                          # one folder per panel type
 │   ├── canvas/                      #   Excalidraw + math overlay
 │   ├── graph/                       #   JSXGraph plotter
@@ -147,7 +147,7 @@ src/
 │   ├── mllab/                       #   ML learning lab
 │   └── settings/                    #   API keys, keybinds, curriculum
 │
-├── workspace/                       # AppShell (Excalidraw root) + PanelRegistry + sidebar.css
+├── workspace/                       # AppShell (Excalidraw root) + PanelRegistry
 ├── commands/                        # palette + registry + bootstrap + templates + practice
 ├── keybinds/                        # editor + defaults + runtime
 ├── solvers/                         # backend registry + adapters

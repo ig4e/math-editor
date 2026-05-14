@@ -15,6 +15,11 @@ type TunnelsContextValue = {
   DefaultSidebarTabTriggersTunnel: Tunnel;
   OverwriteConfirmDialogTunnel: Tunnel;
   TTDDialogTriggerTunnel: Tunnel;
+  // math-editor fork: host-injected slots in the native chrome — extra
+  // tool buttons appended to the top-center shape toolbar, and a left-
+  // aligned cluster sitting beside the zoom / undo Island in the footer.
+  ToolbarExtrasTunnel: Tunnel;
+  FooterLeftTunnel: Tunnel;
   // this can be removed once we create jotai stores per each editor
   // instance
   tunnelsJotai: ReturnType<typeof createIsolation>;
@@ -39,6 +44,8 @@ export const useInitializeTunnels = () => {
       DefaultSidebarTabTriggersTunnel: tunnel(),
       OverwriteConfirmDialogTunnel: tunnel(),
       TTDDialogTriggerTunnel: tunnel(),
+      ToolbarExtrasTunnel: tunnel(),
+      FooterLeftTunnel: tunnel(),
       tunnelsJotai,
     };
   }, []);

@@ -41,9 +41,13 @@ react` and rebuilt the entire app shell on Excalidraw's own primitives:
   component above it.
 - Every panel (Solver, Variables, Graph 2D, Graph 3D, AI, Notes,
   Reference, Inspector, Matrix, Numerics, ML Lab, Settings) is a
-  `<Sidebar.Tab>` inside Excalidraw's native `<Sidebar name="math-
-  notebook" docked>`. The tab triggers are icon-only and styled to
-  match Excalidraw's sidebar chrome via `src/workspace/sidebar.css`.
+  `<Sidebar.Tab>` inside Excalidraw's `<DefaultSidebar>` —
+  the same rail that hosts Excalidraw's built-in Library and Search
+  tabs. The tab triggers are icon-only and injected through
+  `<DefaultSidebar.TabTriggers>`; no custom sidebar CSS is needed
+  because we ride the native sidebar chrome. The rail width is
+  user-resizable (drag handle on the inner edge) and persisted as
+  `workspaceSlice.sidebarWidth`.
 - Math + text blocks are `embeddable` scene elements
   (`mathblock://<id>` / `textblock://<id>` links) — drag, resize,
   zoom, undo, select, delete, copy/paste are all native.
@@ -55,8 +59,10 @@ react` and rebuilt the entire app shell on Excalidraw's own primitives:
   Excalidraw's dark chrome (#121212 canvas, #232329 surface, #a8a5ff
   accent) so panels and canvas share one palette.
 - `workspaceSlice` shrank from 6 fields (layout JSON, presets,
-  openPanels, …) to one: `activeSidebarTab`. Excalidraw's
-  `appState.openSidebar` is the live source of truth.
+  openPanels, …) to two: `activeSidebarTab` (mirrors Excalidraw's
+  `appState.openSidebar.tab` so reload restores the last-active panel)
+  and `sidebarWidth` (drag-resized rail width, clamped 320–900,
+  threaded into Excalidraw via the `sidebarWidth` prop).
 - `flexlayout-react` removed from `package.json`. `Workspace.tsx`,
   `layout.defaults.ts`, `flexlayout.css` deleted.
 
@@ -66,7 +72,7 @@ react` and rebuilt the entire app shell on Excalidraw's own primitives:
 src/
 ├── App.tsx · main.tsx · index.css · sw.ts · pwa.ts · vite-env.d.ts
 │
-├── workspace/                    flexlayout shell + PanelRegistry
+├── workspace/                    AppShell (Excalidraw host) + PanelRegistry
 ├── panels/                       12 panel folders
 │   ├── canvas/                   Excalidraw + MathOverlay + anchors + inject
 │   ├── solver/                   step-by-step + Pin-to-canvas

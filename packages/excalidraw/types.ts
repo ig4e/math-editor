@@ -593,6 +593,10 @@ export interface ExcalidrawProps {
   ) => React.ReactNode;
   aiEnabled?: boolean;
   showDeprecatedFonts?: boolean;
+  // math-editor fork: override for the docked sidebar's width
+  // (--right-sidebar-width). Number = px. Defaults to 302px to
+  // match upstream when omitted.
+  sidebarWidth?: number;
 }
 
 export type SceneData = {

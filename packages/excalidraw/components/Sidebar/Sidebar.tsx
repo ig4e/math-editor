@@ -45,6 +45,9 @@ export const SidebarInner = forwardRef(
       onDock,
       docked,
       className,
+      onResize,
+      minWidth = 280,
+      maxWidth = 800,
       ...rest
     }: SidebarProps & Omit<React.RefAttributes<HTMLDivElement>, "onSelect">,
     ref: React.ForwardedRef<HTMLDivElement>,
@@ -132,12 +135,58 @@ export const SidebarInner = forwardRef(
       };
     }, [closeLibrary, docked, device.editor.canFitSidebar]);
 
+    // math-editor fork: optional drag handle on the sidebar's left edge.
+    // We track drag state in a closure on the handle's pointerdown so we
+    // don't need extra renders during drag.
+    const handlePointerDown = useCallback(
+      (event: React.PointerEvent<HTMLDivElement>) => {
+        if (!onResize) return;
+        event.preventDefault();
+        const island = islandRef.current;
+        if (!island) return;
+        const startX = event.clientX;
+        const startWidth = island.getBoundingClientRect().width;
+        const target = event.currentTarget;
+        target.setPointerCapture(event.pointerId);
+        target.classList.add("sidebar__resize-handle--dragging");
+
+        const onMove = (e: PointerEvent) => {
+          const delta = startX - e.clientX;
+          const next = Math.max(
+            minWidth,
+            Math.min(maxWidth, Math.round(startWidth + delta)),
+          );
+          onResize(next);
+        };
+        const onUp = () => {
+          target.releasePointerCapture(event.pointerId);
+          target.classList.remove("sidebar__resize-handle--dragging");
+          window.removeEventListener("pointermove", onMove);
+          window.removeEventListener("pointerup", onUp);
+          window.removeEventListener("pointercancel", onUp);
+        };
+        window.addEventListener("pointermove", onMove);
+        window.addEventListener("pointerup", onUp);
+        window.addEventListener("pointercancel", onUp);
+      },
+      [onResize, minWidth, maxWidth],
+    );
+
     return (
       <Island
         {...rest}
         className={clsx("sidebar", { "sidebar--docked": docked }, className)}
         ref={islandRef}
       >
+        {onResize && (
+          <div
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Resize sidebar"
+            className="sidebar__resize-handle"
+            onPointerDown={handlePointerDown}
+          />
+        )}
         <SidebarPropsContext.Provider value={headerPropsRef.current}>
           {children}
         </SidebarPropsContext.Provider>

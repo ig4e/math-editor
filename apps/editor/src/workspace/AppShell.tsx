@@ -1,10 +1,11 @@
 // AppShell — the new app root, replacing the FlexLayout-based
 // Workspace from v2. Excalidraw is now THE host; every panel lives as
-// a tab inside Excalidraw's native <Sidebar>, math and text blocks
-// are first-class scene element types (`math`, `text-block`), and our
-// extensions plug into Excalidraw's documented slots:
+// a tab inside Excalidraw's *default* <Sidebar> alongside the built-in
+// Library and Search tabs, math and text blocks are first-class scene
+// element types (`math`, `text-block`), and our extensions plug into
+// Excalidraw's documented slots:
 //
-//   - <Sidebar>          → all panels (Solver, Variables, Graph, …)
+//   - <DefaultSidebar>   → Library + Search + every host panel as a tab
 //   - <MainMenu>         → math-specific items beside Excalidraw's
 //   - <Footer>           → math toolbar + status strip
 //   - <WelcomeScreen>    → first-run hints (Excalidraw's own primitives)
@@ -13,7 +14,15 @@
 //                          on top of each block scene element
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Excalidraw, Sidebar, isBlockElement } from '@excalidraw/excalidraw';
+import {
+  Excalidraw,
+  DefaultSidebar,
+  Sidebar,
+  DEFAULT_SIDEBAR,
+  LIBRARY_SIDEBAR_TAB,
+  CANVAS_SEARCH_TAB,
+  isBlockElement,
+} from '@excalidraw/excalidraw';
 import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
 import type {
   NonDeleted,
@@ -42,10 +51,9 @@ import { blockFromElement } from '../panels/canvas/blockElements';
 import { getAllPanels, subscribePanels } from './PanelRegistry';
 import { Icon } from '../components/Icons';
 import { Spinner } from '../components/common';
-import './sidebar.css';
 
-export const SIDEBAR_NAME = 'math-notebook';
 const SCENE_DEBOUNCE_MS = 250;
+const BUILTIN_TABS = new Set<string>([LIBRARY_SIDEBAR_TAB, CANVAS_SEARCH_TAB]);
 
 // Module-level, stable reference so React.memo'd <Excalidraw> doesn't
 // see a new UIOptions object every render. (UIOptions is excluded from
@@ -61,9 +69,8 @@ const EXCALIDRAW_UI_OPTIONS = {
     toggleTheme: false,
     saveAsImage: true,
   },
-  // Keep the dock preference docked so Excalidraw's library and our
-  // panels sidebar can sit side-by-side without one squishing the
-  // other on wide viewports.
+  // Above this viewport width the default sidebar docks (library +
+  // search + our panel tabs all share one rail).
   dockedSidebarBreakpoint: 800,
 } as const;
 
@@ -91,6 +98,8 @@ export function AppShell() {
   const setSheetSnapshot = useStore((s) => s.setSheetSnapshot);
   const setActiveSidebarTab = useStore((s) => s.setActiveSidebarTab);
   const activeSidebarTab = useStore((s) => s.activeSidebarTab);
+  const sidebarWidth = useStore((s) => s.sidebarWidth);
+  const setSidebarWidth = useStore((s) => s.setSidebarWidth);
   const setSheetBlocks = useStore((s) => s.setSheetBlocks);
 
   const apiRef = useRef<ExcalidrawImperativeAPI | null>(null);
@@ -243,6 +252,7 @@ export function AppShell() {
   // shallow-compare would fail on that prop, forcing Excalidraw to
   // re-render, triggering componentDidUpdate, firing onChange, → loop.
   const handleExcalidrawAPI = useCallback((api: ExcalidrawImperativeAPI) => {
+    console.log('[DEBUG appshell] handleExcalidrawAPI fired', !!api, typeof api?.updateScene);
     apiRef.current = api;
     setExcalidrawAPI(api);
     mirrorBlocksRef.current();
@@ -260,9 +270,16 @@ export function AppShell() {
     <CanvasTopRight apiRef={apiRef} />
   ), []);
 
-  // Stable Sidebar onStateChange — same reason.
+  // Stable Sidebar onStateChange — same reason. The default sidebar
+  // hosts library + search tabs too; we only mirror our own panel tabs
+  // into the store so a reload restores the same panel.
   const handleSidebarStateChange = useCallback((state: { tab?: string | null } | null) => {
-    setActiveSidebarTab(state?.tab ?? null);
+    const tab = state?.tab ?? null;
+    if (tab && BUILTIN_TABS.has(tab)) {
+      setActiveSidebarTab(null);
+      return;
+    }
+    setActiveSidebarTab(tab);
   }, [setActiveSidebarTab]);
 
   // Memo initialData so it doesn't allocate a new object every render.
@@ -277,7 +294,7 @@ export function AppShell() {
       ...((initialData?.['appState'] as object) ?? {}),
       theme: 'dark' as const,
       openSidebar: activeSidebarTab
-        ? { name: SIDEBAR_NAME, tab: activeSidebarTab }
+        ? { name: DEFAULT_SIDEBAR.name, tab: activeSidebarTab }
         : null,
     },
     ...(libraryItems
@@ -287,11 +304,13 @@ export function AppShell() {
 
   // Imperative sidebar toggle for commands / panel-driven opens. We
   // expose it through the same inject module as the Excalidraw API.
+  // Routes through the SAME default sidebar that hosts library + search
+  // so all tabs share one rail.
   useEffect(() => {
     setSidebarToggler((tab) => {
       const api = apiRef.current;
       if (!api) return false;
-      api.toggleSidebar({ name: SIDEBAR_NAME, tab, force: true });
+      api.toggleSidebar({ name: DEFAULT_SIDEBAR.name, tab, force: true });
       setActiveSidebarTab(tab);
       return true;
     });
@@ -309,39 +328,41 @@ export function AppShell() {
         renderBlockContent={renderBlockContent}
         renderTopRightUI={renderTopRightUI}
         UIOptions={EXCALIDRAW_UI_OPTIONS}
+        sidebarWidth={sidebarWidth}
       >
         <CanvasMainMenu />
         <CanvasFooter />
         <CanvasWelcome />
         <CanvasTTDDialog />
-        <Sidebar
-          name={SIDEBAR_NAME}
-          docked
+        <DefaultSidebar
           onStateChange={handleSidebarStateChange}
+          onResize={setSidebarWidth}
+          minWidth={320}
+          maxWidth={900}
         >
-          <Sidebar.Header />
-          <Sidebar.Tabs>
-            <Sidebar.TabTriggers>
-              {panels.map((p) => (
-                <Sidebar.TabTrigger key={p.id} tab={p.id}>
-                  <span title={p.title} aria-label={p.title} className="inline-flex items-center justify-center">
-                    <Icon name={p.icon} />
-                  </span>
-                </Sidebar.TabTrigger>
-              ))}
-            </Sidebar.TabTriggers>
-            {panels.map((p) => {
-              const C = p.component;
-              return (
-                <Sidebar.Tab key={p.id} tab={p.id}>
-                  <PanelMount title={p.title}>
-                    <C />
-                  </PanelMount>
-                </Sidebar.Tab>
-              );
-            })}
-          </Sidebar.Tabs>
-        </Sidebar>
+          <DefaultSidebar.TabTriggers>
+            {panels.map((p) => (
+              <Sidebar.TabTrigger
+                key={p.id}
+                tab={p.id}
+                title={p.title}
+                aria-label={p.title}
+              >
+                <Icon name={p.icon} />
+              </Sidebar.TabTrigger>
+            ))}
+          </DefaultSidebar.TabTriggers>
+          {panels.map((p) => {
+            const C = p.component;
+            return (
+              <Sidebar.Tab key={p.id} tab={p.id}>
+                <PanelMount title={p.title}>
+                  <C />
+                </PanelMount>
+              </Sidebar.Tab>
+            );
+          })}
+        </DefaultSidebar>
       </Excalidraw>
       <SelectionToolbar apiRef={apiRef} />
     </div>
@@ -350,10 +371,32 @@ export function AppShell() {
 
 function PanelMount({ children }: { title: string; children: ReactNode }) {
   return (
-    <div className="flex flex-col h-full min-h-0 bg-surface">
+    <div
+      className="panel-mount"
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        minHeight: 0,
+        color: 'var(--text-primary-color)',
+        background: 'transparent',
+      }}
+    >
       <Suspense
         fallback={
-          <div className="h-full w-full flex items-center justify-center gap-2 text-fg-muted text-sm">
+          <div
+            style={{
+              height: '100%',
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              fontSize: 13,
+              opacity: 0.7,
+              color: 'var(--text-primary-color)',
+            }}
+          >
             <Spinner /> Loading…
           </div>
         }

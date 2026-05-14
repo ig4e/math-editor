@@ -1,16 +1,15 @@
-// The right-hand chip cluster that Excalidraw mounts via renderTopRightUI.
-// Sits beside the (collab / live-collab) area in stock Excalidraw — we
-// repurpose it for "add math block" / "add text block". The app is
-// dark-only so there's no theme toggle anymore.
+// Host buttons for "Add math block" / "Add text block". Rendered into
+// the native shape toolbar via the <ToolbarExtras> tunnel so they sit
+// alongside selection / rectangle / arrow / text / etc. with the same
+// ToolButton chrome and the same keyboard-shortcut affordances.
 //
-// Visual style intentionally mirrors Excalidraw's own pill-style buttons
-// so the addition reads as part of the same chrome.
+// Nothing is mounted into renderTopRightUI any more — that slot is
+// reserved for collaborator avatars + the library trigger.
 
+import { ToolbarExtras, ToolButton } from '@excalidraw/excalidraw';
 import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
 import { useStore } from '../../state/store';
-import { Tooltip } from '../../components/common/Tooltip';
 import { Icon } from '../../components/Icons';
-import { cx } from '../../utils/cx';
 
 interface Props {
   apiRef: React.MutableRefObject<ExcalidrawImperativeAPI | null>;
@@ -20,54 +19,41 @@ export function CanvasTopRight({ apiRef }: Props) {
   const addMathBlock = useStore((s) => s.addMathBlock);
   const addTextBlock = useStore((s) => s.addTextBlock);
 
-  const placeMathBlock = () => {
+  const center = (): { x: number; y: number } | null => {
     const api = apiRef.current;
-    if (!api) return;
+    if (!api) return null;
     const state = api.getAppState();
-    const x = (-state.scrollX + state.width / 2) / state.zoom.value - 110;
-    const y = (-state.scrollY + state.height / 2) / state.zoom.value - 28;
-    addMathBlock({ x, y });
-  };
-
-  const placeTextBlock = () => {
-    const api = apiRef.current;
-    if (!api) return;
-    const state = api.getAppState();
-    const x = (-state.scrollX + state.width / 2) / state.zoom.value - 110;
-    const y = (-state.scrollY + state.height / 2) / state.zoom.value - 28;
-    addTextBlock({ x, y });
+    return {
+      x: (-state.scrollX + state.width / 2) / state.zoom.value - 110,
+      y: (-state.scrollY + state.height / 2) / state.zoom.value - 28,
+    };
   };
 
   return (
-    <div className="flex items-center gap-1">
-      <PillButton label="Add math block (E)" onClick={placeMathBlock}>
-        <Icon name="fx" /> <span>Math</span>
-      </PillButton>
-      <PillButton label="Add text block (T)" onClick={placeTextBlock}>
-        <Icon name="text" /> <span>Text</span>
-      </PillButton>
-    </div>
-  );
-}
-
-function PillButton({
-  label, onClick, children,
-}: { label: string; onClick(): void; children: React.ReactNode }) {
-  return (
-    <Tooltip label={label}>
-      {/* eslint-disable-next-line no-restricted-syntax -- bespoke pill chrome matched to Excalidraw's renderTopRightUI slot */}
-      <button
+    <ToolbarExtras>
+      <div className="App-toolbar__divider" />
+      <ToolButton
         type="button"
-        aria-label={label}
-        onClick={onClick}
-        className={cx(
-          'inline-flex items-center gap-1 h-8 px-2.5 rounded-md text-xs font-medium',
-          'bg-surface text-fg border border-border hover:bg-surface-2',
-          'transition-colors duration-150 ease-out',
-        )}
-      >
-        {children}
-      </button>
-    </Tooltip>
+        aria-label="Add math block"
+        title="Add math block — E"
+        keyBindingLabel="E"
+        icon={<Icon name="fx" />}
+        onClick={() => {
+          const c = center();
+          if (c) addMathBlock(c);
+        }}
+      />
+      <ToolButton
+        type="button"
+        aria-label="Add text block"
+        title="Add text block — T"
+        keyBindingLabel="T"
+        icon={<Icon name="text" />}
+        onClick={() => {
+          const c = center();
+          if (c) addTextBlock(c);
+        }}
+      />
+    </ToolbarExtras>
   );
 }

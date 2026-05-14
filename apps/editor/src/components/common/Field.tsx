@@ -1,6 +1,7 @@
-// Form-row wrapper — label + control + optional hint / error / shortcut.
-// Used in every settings form and dialog. Pairs label↔control via an
-// auto-generated id.
+// Form-row wrapper — label + control + optional hint / error /
+// shortcut. Styled to match the Excalidraw sidebar tab content: label
+// inherits `--text-primary-color`, hint uses the muted variant, error
+// uses `--color-danger`. No Tailwind theme tokens are referenced.
 
 import { useId, type ReactNode } from 'react';
 import { cx } from '../../utils/cx';
@@ -21,11 +22,19 @@ interface Props {
 export function Field({ label, hint, error, rightSlot, inline, children, className }: Props) {
   const id = useId();
   return (
-    <div className={cx('flex gap-2', inline ? 'flex-row items-center' : 'flex-col', className)}>
+    <div
+      className={cx('flex gap-2', inline ? 'flex-row items-center' : 'flex-col', className)}
+      style={{ color: 'var(--text-primary-color)' }}
+    >
       {(label || rightSlot) && (
-        <div className={cx('flex items-center justify-between', inline ? 'min-w-0 w-40' : '')}>
+        <div
+          className={cx('flex items-center justify-between', inline ? 'min-w-0 w-40' : '')}
+        >
           {label && (
-            <label htmlFor={id} className="text-sm font-medium text-fg">
+            <label
+              htmlFor={id}
+              style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary-color)' }}
+            >
               {label}
             </label>
           )}
@@ -34,8 +43,14 @@ export function Field({ label, hint, error, rightSlot, inline, children, classNa
       )}
       <div className={cx('flex flex-col gap-1', inline && 'flex-1 min-w-0')}>
         {children(id)}
-        {hint && !error && <div className="text-xs text-fg-muted">{hint}</div>}
-        {error && <div className="text-xs text-danger">{error}</div>}
+        {hint && !error && (
+          <div style={{ fontSize: 11, opacity: 0.65, color: 'var(--text-primary-color)' }}>
+            {hint}
+          </div>
+        )}
+        {error && (
+          <div style={{ fontSize: 11, color: 'var(--color-danger, #db4f3d)' }}>{error}</div>
+        )}
       </div>
     </div>
   );

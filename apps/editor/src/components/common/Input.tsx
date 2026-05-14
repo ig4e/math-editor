@@ -1,5 +1,5 @@
-// Themed text input. Wraps native <input>; we own height, padding,
-// border, focus ring. No JS — it's just classes.
+// Themed text input. Native <input> styled to match Excalidraw's
+// `.TextInput` chrome — same height, padding, border, focus ring.
 
 import { forwardRef, type InputHTMLAttributes } from 'react';
 import { cx } from '../../utils/cx';
@@ -8,19 +8,28 @@ interface Props extends InputHTMLAttributes<HTMLInputElement> {
   invalid?: boolean;
 }
 
+const baseStyle: React.CSSProperties = {
+  height: 32,
+  padding: '0 10px',
+  fontSize: 13,
+  borderRadius: 'var(--border-radius-md, 6px)',
+  background: 'var(--input-bg-color, var(--island-bg-color))',
+  color: 'var(--text-primary-color)',
+  border: '1px solid var(--input-border-color, var(--sidebar-border-color))',
+  outline: 'none',
+};
+
 export const Input = forwardRef<HTMLInputElement, Props>(
-  ({ invalid, className, ...rest }, ref) => (
+  ({ invalid, className, style, ...rest }, ref) => (
     <input
       ref={ref}
       {...rest}
-      className={cx(
-        'h-8 px-2.5 text-sm rounded-md bg-surface text-fg',
-        'border border-border placeholder:text-fg-faint',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-app',
-        'disabled:opacity-60 disabled:cursor-not-allowed',
-        invalid && 'border-danger focus-visible:ring-danger',
-        className,
-      )}
+      className={cx('panel-input', className)}
+      style={{
+        ...baseStyle,
+        ...(invalid ? { borderColor: 'var(--color-danger, #db4f3d)' } : {}),
+        ...style,
+      }}
     />
   ),
 );

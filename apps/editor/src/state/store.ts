@@ -74,8 +74,9 @@ export const useStore = create<Store>()(
         sheets: s.sheets,
         sheetOrder: s.sheetOrder,
         activeSheetId: s.activeSheetId,
-        // workspace (v3: just remembers the last-active sidebar tab)
+        // workspace (last-active sidebar tab + docked sidebar width)
         activeSidebarTab: s.activeSidebarTab,
+        sidebarWidth: s.sidebarWidth,
         // prefs
         theme: s.theme,
         themeAuto: s.themeAuto,

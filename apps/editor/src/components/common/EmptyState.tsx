@@ -1,11 +1,10 @@
-// First-paint of an empty panel. Renders a centered icon + title +
-// short description + optional single CTA. Used by every panel before
-// it has data — Phase 1 stub panels are nothing but EmptyStates.
+// First-paint of an empty panel — centered icon + title + short
+// description + optional single CTA. Styled with Excalidraw's chrome
+// variables so it reads as part of the native sidebar tab content.
 
 import type { ReactNode } from 'react';
+import { FilledButton, Island } from '@excalidraw/excalidraw';
 import { Icon, type IconName } from '../Icons';
-import { Button } from './Button';
-import { cx } from '../../utils/cx';
 
 interface Props {
   icon?: IconName;
@@ -18,36 +17,78 @@ interface Props {
   className?: string;
 }
 
+const wrapperStyle: React.CSSProperties = {
+  height: '100%',
+  width: '100%',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  textAlign: 'center',
+  gap: 12,
+  padding: '32px 24px',
+  color: 'var(--text-primary-color)',
+};
+
 export function EmptyState({ icon, title, description, cta, secondary, className }: Props) {
   return (
-    <div className={cx(
-      'h-full w-full flex flex-col items-center justify-center text-center gap-3',
-      'px-6 py-8 text-fg-muted',
-      className,
-    )}>
+    <div className={className} style={wrapperStyle}>
       {icon && (
-        <div className="w-12 h-12 rounded-full bg-surface-2 inline-flex items-center justify-center">
-          <Icon name={icon} className="w-6 h-6 text-fg-faint" />
+        <Island padding={2}>
+          <div
+            style={{
+              width: 28,
+              height: 28,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              opacity: 0.7,
+            }}
+          >
+            <Icon name={icon} />
+          </div>
+        </Island>
+      )}
+      <div style={{ fontSize: 14, fontWeight: 600 }}>{title}</div>
+      {description && (
+        <div
+          style={{
+            fontSize: 13,
+            maxWidth: 360,
+            lineHeight: 1.5,
+            opacity: 0.7,
+          }}
+        >
+          {description}
         </div>
       )}
-      <div className="text-sm font-semibold text-fg">{title}</div>
-      {description && <div className="text-sm max-w-md text-fg-muted leading-relaxed">{description}</div>}
       {(cta || secondary) && (
-        <div className="flex items-center gap-2 mt-1">
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            marginTop: 4,
+          }}
+        >
           {cta && (
-            <Button
-              variant="primary"
-              size="md"
+            <FilledButton
+              variant="filled"
+              color="primary"
+              size="medium"
+              label={cta.label}
+              icon={cta.icon ? <Icon name={cta.icon} /> : undefined}
               onClick={cta.onClick}
-              leadingIcon={cta.icon && <Icon name={cta.icon} />}
-            >
-              {cta.label}
-            </Button>
+            />
           )}
           {secondary && (
-            <Button variant="ghost" size="md" onClick={secondary.onClick}>
-              {secondary.label}
-            </Button>
+            <FilledButton
+              variant="outlined"
+              color="muted"
+              size="medium"
+              label={secondary.label}
+              onClick={secondary.onClick}
+            />
           )}
         </div>
       )}

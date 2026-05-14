@@ -1,17 +1,17 @@
-// Square button + Radix Tooltip. The default chrome for panel headers
-// and toolbars. Visually matches Excalidraw's `.ToolIcon` — 28-32 px
-// square, 8 px radius, hover-brightening surface, accent-bg active
-// state — so a panel-header IconButton sits flush next to Excalidraw's
-// zoom / undo controls.
+// Square icon button + tooltip. Renders Excalidraw's exported
+// `ToolButton` underneath so the chrome matches the native
+// `.ToolIcon` exactly (same hover surface, same active accent, same
+// disabled treatment). The Tooltip wrapper still surfaces the
+// keyboard shortcut next to the label.
 
-import { forwardRef, type ButtonHTMLAttributes } from 'react';
+import { forwardRef } from 'react';
+import { ToolButton } from '@excalidraw/excalidraw';
 import { Icon, type IconName } from '../Icons';
 import { Tooltip } from './Tooltip';
-import { cx } from '../../utils/cx';
 
 export type IconButtonSize = 'sm' | 'md' | 'lg';
 
-interface Props extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'title'> {
+interface Props {
   icon: IconName;
   /** Accessible label + tooltip text. */
   label: string;
@@ -22,40 +22,40 @@ interface Props extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'title'> {
   active?: boolean;
   /** Danger variant — used in destructive header actions. */
   variant?: 'default' | 'danger';
+  disabled?: boolean;
+  className?: string;
+  onClick?: (event: React.MouseEvent) => void;
+  'data-testid'?: string;
 }
 
-const SIZES: Record<IconButtonSize, string> = {
-  sm: 'w-7 h-7',
-  md: 'w-8 h-8',
-  lg: 'w-10 h-10',
+const SIZE_MAP: Record<IconButtonSize, 'small' | 'medium'> = {
+  sm: 'small',
+  md: 'medium',
+  lg: 'medium',
 };
 
 export const IconButton = forwardRef<HTMLButtonElement, Props>(
-  ({ icon, label, shortcut, size = 'md', active, variant = 'default', className, ...rest }, ref) => (
-    <Tooltip label={label} shortcut={shortcut}>
-      <button
-        ref={ref}
-        type="button"
-        aria-label={label}
-        {...rest}
-        className={cx(
-          'inline-flex items-center justify-center rounded-lg',
-          // 8 px radius matches Excalidraw's `.ToolIcon`.
-          'transition-colors duration-150 ease-out',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app',
-          'disabled:opacity-60 disabled:cursor-not-allowed',
-          variant === 'danger'
-            ? 'text-danger hover:bg-danger/10'
-            : active
-              ? 'bg-accent-bg text-accent'
-              : 'text-fg-2 hover:bg-surface-2 hover:text-fg',
-          SIZES[size],
-          className,
-        )}
-      >
-        <Icon name={icon} />
-      </button>
-    </Tooltip>
-  ),
+  ({ icon, label, shortcut, size = 'md', active, variant = 'default', className, ...rest }, ref) => {
+    return (
+      <Tooltip label={label} shortcut={shortcut}>
+        <ToolButton
+          ref={ref}
+          type="button"
+          icon={<Icon name={icon} />}
+          aria-label={label}
+          title={label}
+          selected={active}
+          size={SIZE_MAP[size]}
+          className={className}
+          style={
+            variant === 'danger'
+              ? { color: 'var(--color-danger, #db4f3d)' }
+              : undefined
+          }
+          {...rest}
+        />
+      </Tooltip>
+    );
+  },
 );
 IconButton.displayName = 'IconButton';

@@ -20,8 +20,9 @@ We **extend** Excalidraw via its documented slots:
 | Slot | What we put there |
 |---|---|
 | `<MainMenu>` children | New sheet, Insert template…, Open AI chat, Open Graph, Open Settings, Keyboard shortcuts |
-| `renderTopRightUI` | "+ Math" block, "+ Text" block, theme toggle, sheet share |
-| `<Footer>` children | known-variable count, active AI provider, "Cmd+K" hint |
+| `renderTopRightUI` | "+ Math" / "+ Text" buttons using the exported `Button` + `Stack` primitives so they sit alongside the native library trigger in the same chrome |
+| `<Footer>` children | `Island` wrapping the status strip (block count · active AI provider · Cmd+K hint · collab status) so it lines up with the native zoom / undo cluster |
+| `<DefaultSidebar>` | one shared sidebar rendering Library + Search + every host panel. Host tab triggers go through `<DefaultSidebar.TabTriggers>`; host tab content is a `<Sidebar.Tab>` child. Width is user-resizable (drag handle on the left edge, persisted via `workspaceSlice.sidebarWidth`) and flows back into Excalidraw via the `sidebarWidth` prop |
 | `<WelcomeScreen>` children | first-run welcome on empty sheets (uses Excalidraw's WelcomeScreen primitives) |
 | `renderCustomStats` | compact panel showing the selected expression's symbolic structure (deep link to Inspector) |
 | Selection floating toolbar | "Solve / Solve system / Graph / Ask AI" alongside Excalidraw's native style controls |
@@ -29,8 +30,14 @@ We **extend** Excalidraw via its documented slots:
 Native UI we leave **untouched**:
 
 - Top-center shape tool palette (selection, lasso, freedraw, line, arrow, rectangle, ellipse, diamond, text, image, eraser).
-- Bottom-left zoom controls + undo / redo.
-- Right-side library panel (we ship our math-diagram templates as a public Excalidraw Library that lands here).
+- Bottom-left zoom controls + undo / redo (we render our status strip beside them as another `Island` in the same `Stack.Row`).
+- Right-side library + search panel — we no longer maintain a parallel sidebar. The Excalidraw library ships our math-diagram templates as one tab; the in-canvas search ships as another; every host panel slots in after them.
+
+### What that rules out
+
+- **No second sidebar.** There is no `math-notebook` rail any more. Host panels MUST register through `<DefaultSidebar.TabTriggers>` — that is the only path in.
+- **No bespoke status pills or top-right pills.** Use the exported `Button` + `Island` + `Stack` primitives so anything we drop into a slot matches the surrounding chrome automatically.
+- **No hard-coded sidebar width.** The width belongs to the host store and flows into Excalidraw via the `sidebarWidth` prop. Use that single seam to read or change it.
 
 ## Math blocks as Excalidraw anchors
 

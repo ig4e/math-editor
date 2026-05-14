@@ -40,6 +40,36 @@
     }
   }
 
+  // ---------------------------- resize handle ------------------------------
+  // math-editor fork: drag handle for user-resizable sidebar width. A thin
+  // strip on the inner edge of the docked sidebar that catches pointer
+  // events; the host owns the width state and feeds it back through the
+  // `sidebarWidth` prop on <Excalidraw>.
+  .sidebar__resize-handle {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -3px;
+    width: 6px;
+    cursor: ew-resize;
+    z-index: 10;
+    background: transparent;
+    transition: background-color 120ms ease-out;
+    user-select: none;
+    touch-action: none;
+
+    :root[dir="rtl"] & {
+      left: auto;
+      right: -3px;
+    }
+
+    &:hover,
+    &--dragging {
+      background: var(--color-primary);
+      opacity: 0.55;
+    }
+  }
+
   // ---------------------------- sidebar header ------------------------------
 
   .sidebar__header {
@@ -155,7 +185,12 @@
       $padding: 2px;
       $border: 1px;
       display: flex;
-      gap: 0;
+      // Hosts that mount many tab triggers (math-notebook ships 12+
+      // panels alongside Library + Search) need the row to wrap or the
+      // flex children get crushed and hit-tests pick the wrong icon
+      // when you hover near the edge of one.
+      flex-wrap: wrap;
+      gap: 2px;
       padding: $padding;
       // offset by padding + border to vertically center the list with sibling
       // buttons (both from top and bototm, due to flex layout)
@@ -168,6 +203,9 @@
       .sidebar-tab-trigger {
         height: var(--lg-button-size);
         width: var(--lg-button-size);
+        // Lock the size — without this the trigger flex-shrinks to fit
+        // and the visible icon stops matching its hit area.
+        flex: 0 0 var(--lg-button-size);
 
         border: none;
       }

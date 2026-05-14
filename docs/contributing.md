@@ -19,8 +19,8 @@ Pre-commit: at minimum, `npm run typecheck && npm run build` must be green.
 - **Lazy-load anything > 100 KB gzipped.** Excalidraw, JSXGraph, mathsteps, Pyodide, Three.js, vision models — all behind `lazyPanel()` from `utils/lazy.ts`. No ad-hoc dynamic imports.
 - **Single source of truth.** Zustand store. No prop drilling for state. No `Context.Provider` for state (Context is fine for *static* things like the icon registry).
 - **No `any`.** Strict TS; `noImplicitAny`, `noUncheckedIndexedAccess` on. If a type is genuinely unknown, type it as `unknown` and narrow.
-- **One panel = one folder** under `src/panels/`. Each registers itself via `PanelRegistry`; `<AppShell>` renders every registered panel as a `<Sidebar.Tab>` inside Excalidraw. See [`adding-a-panel.md`](./adding-a-panel.md).
-- **The app shell IS Excalidraw.** No separate layout library. Touching `workspace/AppShell.tsx` to add a panel means you're doing it wrong — extend through the registry.
+- **One panel = one folder** under `src/panels/`. Each registers itself via `PanelRegistry`; `<AppShell>` renders every registered panel as a `<Sidebar.Tab>` inside Excalidraw's `<DefaultSidebar>` (shared with Library + Search). See [`adding-a-panel.md`](./adding-a-panel.md).
+- **The app shell IS Excalidraw.** No separate layout library. One shared `<DefaultSidebar>` — never stand up a second `<Sidebar>` instance, and never reintroduce custom sidebar CSS. Extensions to the chrome go through Excalidraw's documented slots (`<MainMenu>`, `<Footer>`, `renderTopRightUI`, `<DefaultSidebar.TabTriggers>`) and use the exported `Button` / `Island` / `Stack` primitives so they match the native chrome by default.
 - **One AI provider = one file** under `src/ai/providers/`. See [`adding-an-ai-provider.md`](./adding-an-ai-provider.md).
 - **No bespoke utilities for things Radix / Tailwind already do.** No hand-rolled dropdown menus, no `useFocusTrap`, no `useClickOutside` — Radix has them.
 - **Main entry under 800 KB gzipped** before lazy chunks. The CI bundle-size check fails the build if this is breached.

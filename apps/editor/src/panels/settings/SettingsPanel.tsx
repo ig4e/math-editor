@@ -78,9 +78,16 @@ export default function SettingsPanel() {
       : 'appearance';
 
   return (
-    <div className="flex flex-col h-full bg-surface">
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        color: 'var(--text-primary-color)',
+      }}
+    >
       <PanelHeader title="Settings" icon="settings" />
-      <div className="flex-1 overflow-hidden">
+      <div style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
         <Tabs items={ITEMS} defaultValue={initial} orientation="horizontal" />
       </div>
     </div>
@@ -89,8 +96,24 @@ export default function SettingsPanel() {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="h-full overflow-auto p-4">
-      <h2 className="text-sm font-semibold text-fg mb-3">{title}</h2>
+    <div
+      style={{
+        height: '100%',
+        overflow: 'auto',
+        padding: 16,
+        color: 'var(--text-primary-color)',
+      }}
+    >
+      <h2
+        style={{
+          fontSize: 13,
+          fontWeight: 600,
+          margin: '0 0 12px',
+          color: 'var(--text-primary-color)',
+        }}
+      >
+        {title}
+      </h2>
       {children}
     </div>
   );
