@@ -118,6 +118,19 @@ body.excalidraw-cursor-resize * {
     pointer-events: none;
   }
 
+  // math-editor fork: block overlay positions HTML editors (math-field
+  // / contenteditable) over each math + text-block scene element.
+  // Needs the same z-index as the embeddable container so it sits
+  // above the canvas (which has z-index: 2). Without this, the canvas
+  // paints over the overlay and every block shows as just its drawn
+  // frame with no visible content — see staticSvgScene.ts:573 (frame)
+  // vs App.tsx::renderBlocks (overlay).
+  &__block-container {
+    position: absolute;
+    z-index: 2;
+    transform-origin: top left;
+  }
+
   &.theme--dark {
     // The percentage is inspired by
     // https://material.io/design/color/dark-theme.html#properties, which
