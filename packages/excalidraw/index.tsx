@@ -50,6 +50,13 @@ const ExcalidrawBase = (props: ExcalidrawProps) => {
     children,
     validateEmbeddable,
     renderEmbeddable,
+    // math-editor fork: HTML overlay renderer for math + text-block
+    // elements. Threaded through to <App> below so renderBlocks() in
+    // App.tsx can mount the per-element overlay. Without this line the
+    // prop bounced off ExcalidrawBase and every block rendered as just
+    // the canvas-drawn rounded rectangle, with no math-field / text
+    // editor surface on top.
+    renderBlockContent,
     aiEnabled,
     showDeprecatedFonts,
   } = props;
@@ -140,6 +147,7 @@ const ExcalidrawBase = (props: ExcalidrawProps) => {
           onDuplicate={onDuplicate}
           validateEmbeddable={validateEmbeddable}
           renderEmbeddable={renderEmbeddable}
+          renderBlockContent={renderBlockContent}
           aiEnabled={aiEnabled !== false}
           showDeprecatedFonts={showDeprecatedFonts}
         >
