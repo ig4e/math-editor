@@ -25,6 +25,12 @@ export interface SheetsSlice {
   // per-sheet Excalidraw scene snapshot (Phase 2 writes via canvasPanel)
   setSheetSnapshot: (id: string, snapshot: unknown) => void;
 
+  // Replace the sheet's blocks array with a snapshot derived from the
+  // scene. Stage C: scene is source-of-truth; AppShell calls this on
+  // every onChange to mirror block elements into the store so panels
+  // keep their useStore selectors.
+  setSheetBlocks: (id: string, blocks: import('../types').Block[]) => void;
+
   // per-sheet markdown notes (Phase 7 writes via NotesPanel)
   setSheetNotes: (id: string, notes: string) => void;
 
@@ -103,6 +109,12 @@ export const createSheetsSlice: AppSlice<SheetsSlice> = (set) => ({
   setSheetSnapshot: (id, snapshot) => set((s) => {
     const sh = s.sheets[id];
     if (sh) sh.excalidrawSnapshot = snapshot;
+  }),
+
+  setSheetBlocks: (id, blocks) => set((s) => {
+    const sh = s.sheets[id];
+    if (!sh) return;
+    sh.blocks = blocks;
   }),
 
   setSheetNotes: (id, notes) => set((s) => {

@@ -154,6 +154,10 @@ export const getElementShape = <Point extends GlobalPoint | LocalPoint>(
     case "image":
     case "iframe":
     case "text":
+    // math + text-block hit-test against a plain axis-aligned rect, same
+    // as embeddable / iframe / image.
+    case "math":
+    case "text-block":
     case "selection":
       return getPolygonShape(element);
     case "arrow":

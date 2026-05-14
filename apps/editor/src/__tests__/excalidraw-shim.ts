@@ -15,6 +15,12 @@ export const convertToExcalidrawElements = () => [];
 export const sceneCoordsToViewportCoords = ({ sceneX, sceneY }: { sceneX: number; sceneY: number }) =>
   ({ x: sceneX, y: sceneY });
 
+// First-class block element guards (Stage C). Stubbed: tests don't
+// render real elements, so they always return false.
+export const isMathElement = (_el: any) => false;
+export const isTextBlockElement = (_el: any) => false;
+export const isBlockElement = (_el: any) => false;
+
 export const MainMenu: any = Stub;
 MainMenu.Item = Stub;
 MainMenu.Separator = Empty;

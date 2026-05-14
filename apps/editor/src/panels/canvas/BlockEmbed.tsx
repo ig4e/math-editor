@@ -1,129 +1,81 @@
-// Renders the React contents of a math or text block inside an
-// Excalidraw embeddable element. The wrapping element owns position,
-// size, drag, zoom, scroll, select, undo, delete — Excalidraw handles
-// all of it natively. This component only renders the math-field /
-// contenteditable inside the bounds.
+// BlockEmbed — the HTML overlay content for a math / text-block scene
+// element. Mounted by Excalidraw's `renderBlockContent` callback (see
+// packages/excalidraw/components/App.tsx -> renderBlocks). Excalidraw
+// owns the frame (rounded rect, border, background), selection box,
+// drag handles, resize handles, and delete/duplicate keyboard
+// shortcuts. This component just renders the editable surface —
+// math-field for math blocks, contenteditable for text blocks —
+// inside the element's bounds.
 //
-// `data-excalidraw-prevent-events` (Excalidraw's documented passthrough
-// flag) is set on inputs that need to swallow pointer events so the
-// canvas doesn't intercept typing.
+// Pointer events on the overlay are gated on selection by the parent
+// (App.tsx renderBlocks), so when the element isn't selected clicks
+// pass through to the canvas (Excalidraw owns drag/select). When
+// selected, this overlay swallows input so the user can type.
 
 import { memo, useCallback, useEffect, useRef } from 'react';
 import type { MathfieldElement } from 'mathlive';
+import type {
+  ExcalidrawMathElement,
+  ExcalidrawTextBlockElement,
+} from '@excalidraw/excalidraw/element/types';
 import { useStore } from '../../state/store';
-import { useActiveSheet } from '../../state/selectors';
-import type { MathBlock as MathBlockT, TextBlock as TextBlockT } from '../../state/types';
-import { Icon } from '../../components/Icons';
-import { cx } from '../../utils/cx';
+import { updateBlockElement } from './blockElements';
 
 interface Props {
-  blockId: string;
-  type: 'math' | 'text';
+  element: ExcalidrawMathElement | ExcalidrawTextBlockElement;
 }
 
-function BlockEmbedImpl({ blockId, type }: Props) {
-  const sheet = useActiveSheet();
-  const block = sheet?.blocks.find((b) => b.id === blockId);
-
-  if (!block || block.type !== type) {
-    return <div className="h-full w-full bg-surface rounded-md flex items-center justify-center text-fg-faint text-xs">block missing</div>;
-  }
-
+function BlockEmbedImpl({ element }: Props) {
   return (
-    <div
-      className="js-block-embed h-full w-full flex flex-col rounded-md overflow-hidden bg-surface text-fg"
-      style={{ border: '1px solid var(--color-border)' }}
-    >
-      <Header block={block} />
+    <div className="js-block-embed h-full w-full flex flex-col rounded-md overflow-hidden bg-surface text-fg">
       <div className="flex-1 min-h-0 overflow-auto">
-        {block.type === 'math'
-          ? <MathBody block={block} />
-          : <TextBody block={block} />}
+        {element.type === 'math' ? (
+          <MathBody element={element} />
+        ) : (
+          <TextBody element={element} />
+        )}
       </div>
-      {block.showNote && block.note && (
+      {element.showNote && element.note && (
         <div className="border-t border-border-soft px-2 py-1 text-[11px] italic text-fg-muted">
-          {block.note}
+          {element.note}
         </div>
       )}
     </div>
   );
 }
 
-// ----- header -------------------------------------------------------
-
-function Header({ block }: { block: MathBlockT | TextBlockT }) {
-  const duplicate = useStore((s) => s.duplicateBlock);
-  const remove = useStore((s) => s.deleteBlock);
-  return (
-    <header className="flex items-center gap-1 px-1.5 h-6 shrink-0 border-b border-border-soft bg-surface-2">
-      <span className="text-[10px] font-mono text-fg-muted">
-        {block.type === 'math' ? 'fx' : 'text'}
-      </span>
-      <span className="flex-1" />
-      <HeaderButton icon="copy" label="Duplicate" onClick={() => duplicate(block.id)} />
-      <HeaderButton icon="trash" label="Delete"   onClick={() => remove(block.id)} variant="danger" />
-    </header>
-  );
-}
-
-function HeaderButton({
-  icon, label, onClick, variant,
-}: { icon: 'copy' | 'trash'; label: string; onClick(): void; variant?: 'danger' }) {
-  return (
-    // eslint-disable-next-line no-restricted-syntax -- micro-affordance inside an Excalidraw embeddable; Tooltip would re-anchor on every drag
-    <button
-      type="button"
-      aria-label={label}
-      title={label}
-      onPointerDown={(e) => e.stopPropagation()}
-      onClick={(e) => { e.stopPropagation(); onClick(); }}
-      className={cx(
-        'inline-flex items-center justify-center w-5 h-5 rounded',
-        variant === 'danger'
-          ? 'text-fg-muted hover:bg-danger/15 hover:text-danger'
-          : 'text-fg-muted hover:bg-surface hover:text-fg',
-      )}
-    >
-      <Icon name={icon} className="w-3 h-3" />
-    </button>
-  );
-}
-
 // ----- math body ----------------------------------------------------
 
-function MathBody({ block }: { block: MathBlockT }) {
+function MathBody({ element }: { element: ExcalidrawMathElement }) {
   const mfRef = useRef<MathfieldElement | null>(null);
-  const updateBlock = useStore((s) => s.updateBlock);
   const setActive = useStore((s) => s.setActiveMathBlockId);
 
   useEffect(() => {
     const mf = mfRef.current;
-    if (mf && mf.value !== block.latex) {
-      mf.value = block.latex;
+    if (mf && mf.value !== element.latex) {
+      mf.value = element.latex;
     }
-  }, [block.latex]);
+  }, [element.latex]);
 
   const onInput = useCallback(() => {
     const mf = mfRef.current;
     if (!mf) return;
-    if (mf.value !== block.latex) updateBlock(block.id, { latex: mf.value });
-  }, [block.id, block.latex, updateBlock]);
+    if (mf.value !== element.latex) {
+      updateBlockElement(element.blockId, { latex: mf.value });
+    }
+  }, [element.blockId, element.latex]);
 
   return (
-    <div className="px-2 py-1 h-full" style={{ fontSize: block.fontSize }}>
+    <div className="px-2 py-1 h-full" style={{ fontSize: element.fontSize }}>
       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       <math-field
         ref={mfRef as any}
         onInput={onInput}
-        onFocus={() => setActive(block.id)}
+        onFocus={() => setActive(element.blockId)}
         onBlur={() => setActive(null)}
-        // Keep wheel/key events from bubbling to Excalidraw's canvas
-        // when the user is interacting with the field.
-        onWheel={(e: React.WheelEvent) => e.stopPropagation()}
-        onKeyDown={(e: React.KeyboardEvent) => e.stopPropagation()}
         className="block w-full"
       >
-        {block.latex}
+        {element.latex}
       </math-field>
     </div>
   );
@@ -131,23 +83,24 @@ function MathBody({ block }: { block: MathBlockT }) {
 
 // ----- text body ----------------------------------------------------
 
-function TextBody({ block }: { block: TextBlockT }) {
+function TextBody({ element }: { element: ExcalidrawTextBlockElement }) {
   const editorRef = useRef<HTMLDivElement | null>(null);
-  const updateBlock = useStore((s) => s.updateBlock);
 
   useEffect(() => {
     const el = editorRef.current;
-    if (el && el.textContent !== block.text) {
-      el.textContent = block.text;
+    if (el && el.textContent !== element.text) {
+      el.textContent = element.text;
     }
-  }, [block.text]);
+  }, [element.text]);
 
   const onInput = useCallback(() => {
     const el = editorRef.current;
     if (!el) return;
     const next = el.textContent ?? '';
-    if (next !== block.text) updateBlock(block.id, { text: next });
-  }, [block.id, block.text, updateBlock]);
+    if (next !== element.text) {
+      updateBlockElement(element.blockId, { text: next });
+    }
+  }, [element.blockId, element.text]);
 
   return (
     <div
@@ -155,13 +108,11 @@ function TextBody({ block }: { block: TextBlockT }) {
       contentEditable
       suppressContentEditableWarning
       onInput={onInput}
-      onWheel={(e: React.WheelEvent) => e.stopPropagation()}
-      onKeyDown={(e: React.KeyboardEvent) => e.stopPropagation()}
       data-placeholder="Text…"
-      className="px-2 py-1 outline-none text-fg whitespace-pre-wrap min-h-[24px]"
-      style={{ fontSize: block.fontSize }}
+      className="px-2 py-1 outline-none text-fg whitespace-pre-wrap min-h-[24px] h-full"
+      style={{ fontSize: element.fontSize }}
     >
-      {block.text}
+      {element.text}
     </div>
   );
 }

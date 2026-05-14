@@ -169,6 +169,9 @@ export const intersectElementWithLineSegment = (
     case "embeddable":
     case "frame":
     case "magicframe":
+    // math-editor fork: blocks share the rectanguloid collision path.
+    case "math":
+    case "text-block":
       return intersectRectanguloidWithLineSegment(element, line, offset);
     case "diamond":
       return intersectDiamondWithLineSegment(element, line, offset);

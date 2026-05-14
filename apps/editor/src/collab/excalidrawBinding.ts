@@ -3,24 +3,22 @@
 // minimal so we control the conflict semantics.
 //
 // Data model: a Y.Map<string, ExcalidrawElement> keyed by element id.
-// Anchors (math-block placeholder rects) are excluded from sync —
-// block-level sync already covers them via session.ts, and double-
-// syncing both views would race when one peer's useAnchorSync writes
-// over another peer's just-arrived block move.
+// As of Stage C, every scene element — including math + text-block —
+// is a first-class Excalidraw element with its full content embedded
+// in the element. They sync via this map like everything else; no
+// special-case carve-out remains.
 //
 // Local → Yjs: on every debounced Excalidraw onChange, diff the scene
 // vs the map (via the per-element `version` field) and Y.transact the
 // deltas. Origin tag 'local' prevents echo.
 //
 // Yjs → local: observe the map. On non-local updates, gather the full
-// element list (non-anchors from Yjs + locally-derived anchors from
-// the live scene) and updateScene with captureUpdate:'never' so we
-// don't pollute the undo stack.
+// element list from Yjs and updateScene with captureUpdate:'never' so
+// we don't pollute the undo stack.
 
 import type * as Y from 'yjs';
 import type { ExcalidrawElement } from '@excalidraw/excalidraw/element/types';
 import type { CollabSession } from './session';
-import { isAnchor } from '../panels/canvas/anchors';
 import { getExcalidrawAPI } from '../panels/canvas/inject';
 
 const ORIGIN_LOCAL = 'excalidraw-binding-local';
@@ -36,13 +34,10 @@ export function bindExcalidrawScene(session: CollabSession): () => void {
     if (txn.origin === ORIGIN_LOCAL) return;
     const api = getExcalidrawAPI();
     if (!api) return;
-    // Gather remote non-anchor elements + local anchors.
     const remote: ExcalidrawElement[] = [];
     yMap.forEach((el) => remote.push(el));
-    const localAnchors = api.getSceneElementsIncludingDeleted().filter(isAnchor);
-    const next = [...remote, ...localAnchors];
     api.updateScene({
-      elements: next as never,
+      elements: remote as never,
       captureUpdate: 'never' as unknown as never,
     });
   };
@@ -57,7 +52,6 @@ export function bindExcalidrawScene(session: CollabSession): () => void {
     const seen = new Set<string>();
     session.doc.transact(() => {
       for (const el of current) {
-        if (isAnchor(el)) continue;       // local-only
         if (el.isDeleted) continue;       // Yjs tombstones via deletion below
         seen.add(el.id);
         const prev = yMap.get(el.id) as ElementWithVersion | undefined;
@@ -74,9 +68,9 @@ export function bindExcalidrawScene(session: CollabSession): () => void {
     }, ORIGIN_LOCAL);
   };
 
-  // Excalidraw's onChange is already debounced upstream (CanvasPanel
-  // wires a 250ms debounce). Subscribe directly — every call here is
-  // already throttled.
+  // Excalidraw's onChange is already debounced upstream (AppShell
+  // wires a 250 ms debounce on persistence). Subscribe directly —
+  // every call here is already throttled.
   let off: (() => void) | null = null;
   const start = () => {
     const api = getExcalidrawAPI();

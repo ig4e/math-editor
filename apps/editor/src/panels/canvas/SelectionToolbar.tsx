@@ -1,7 +1,6 @@
 // SelectionToolbar — floating "Solve / Graph / Ask AI" overlay that
-// appears above the Excalidraw selection bbox when ≥1 math block (via
-// its anchor element) is part of the selection. Mounted next to
-// MathOverlay inside CanvasPanel.
+// appears above the Excalidraw selection bbox when ≥1 math block is
+// part of the selection. Mounted at the AppShell layer.
 //
 // Side-effect: bridges Excalidraw's `appState.selectedElementIds` into
 // `store.selectedIds` (block scope only) so the existing math.solve /
@@ -9,12 +8,15 @@
 // bridge, command-palette Solve fires on whatever was selected before.
 
 import { useEffect, useMemo, useState } from 'react';
-import { sceneCoordsToViewportCoords } from '@excalidraw/excalidraw';
+import {
+  sceneCoordsToViewportCoords,
+  isMathElement,
+  isBlockElement,
+} from '@excalidraw/excalidraw';
 import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
 import { useStore } from '../../state/store';
 import { useActiveSheet } from '../../state/selectors';
 import { useCommand } from '../../commands/useCommand';
-import { isAnchor, anchorBlockId } from './anchors';
 import { Icon } from '../../components/Icons';
 import { cx } from '../../utils/cx';
 
@@ -59,8 +61,10 @@ export function SelectionToolbar({ apiRef }: Props) {
     let anyMath = false;
     for (const el of elements) {
       if (!selectedSet.has(el.id)) continue;
-      const bid = isAnchor(el) ? anchorBlockId(el) : null;
-      if (bid) { ids.push(bid); anyMath = true; }
+      if (isBlockElement(el) && 'blockId' in el) {
+        if (isMathElement(el)) anyMath = true;
+        ids.push(el.blockId);
+      }
       if (el.x < minX) minX = el.x;
       if (el.y < minY) minY = el.y;
       if (el.x + el.width  > maxX) maxX = el.x + el.width;

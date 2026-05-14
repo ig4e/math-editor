@@ -2,10 +2,9 @@
 // the Excalidraw canvas. Wraps `convertToExcalidrawElements` so each
 // call is one undo step (Excalidraw's Ctrl+Z reverts our injections).
 
-import { convertToExcalidrawElements } from '@excalidraw/excalidraw';
+import { convertToExcalidrawElements, isBlockElement } from '@excalidraw/excalidraw';
 import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
 import type { ExcalidrawElement } from '@excalidraw/excalidraw/element/types';
-import { isAnchor } from './anchors';
 
 let apiRef: ExcalidrawImperativeAPI | null = null;
 
@@ -34,8 +33,21 @@ export function openPanelTab(tab: string): boolean {
   return sidebarToggler ? sidebarToggler(tab) : false;
 }
 
-/** Element ID convention for block anchors, mirrored in anchors.ts. */
-export const anchorElementId = (blockId: string) => `anchor:${blockId}`;
+/** Find the scene element id for a block by its blockId. Returns null
+ *  if no element with that blockId exists in the scene. */
+export function blockElementId(blockId: string): string | null {
+  if (!apiRef) return null;
+  for (const el of apiRef.getSceneElements()) {
+    if (
+      isBlockElement(el) &&
+      'blockId' in el &&
+      el.blockId === blockId
+    ) {
+      return el.id;
+    }
+  }
+  return null;
+}
 
 interface InjectArrowOpts {
   from: { x: number; y: number };
@@ -78,13 +90,23 @@ interface InjectBoundArrowOpts {
 export function injectBoundArrow(opts: InjectBoundArrowOpts): void {
   const api = apiRef;
   if (!api) return;
-  const fromId = anchorElementId(opts.fromAnchorId);
-  const toId = anchorElementId(opts.toAnchorId);
+  const fromId = blockElementId(opts.fromAnchorId);
+  const toId = blockElementId(opts.toAnchorId);
+  if (!fromId || !toId) {
+    console.warn('[inject] block element not found', {
+      fromBlockId: opts.fromAnchorId,
+      toBlockId: opts.toAnchorId,
+    });
+    return;
+  }
   const elements = api.getSceneElements();
   const fromEl = elements.find((el) => el.id === fromId);
   const toEl = elements.find((el) => el.id === toId);
   if (!fromEl || !toEl) {
-    console.warn('[inject] anchor not found', { fromId, toId });
+    console.warn('[inject] block element resolved but not in scene', {
+      fromId,
+      toId,
+    });
     return;
   }
   // Start the arrow at fromEl's center; convertToExcalidrawElements +
@@ -194,13 +216,16 @@ function pushElements(elements: readonly ExcalidrawElement[]): void {
   });
 }
 
-/** Find the rough bottom-right of the active anchor cluster — used to
+/** Find the rough bottom-right of the active block cluster — used to
  *  place a new block "near" the current sources. */
-export function findInsertionPointBelowAnchors(anchorBlockIds: readonly string[]): { x: number; y: number } | null {
+export function findInsertionPointBelowAnchors(blockIds: readonly string[]): { x: number; y: number } | null {
   const api = apiRef;
   if (!api) return null;
-  const wanted = new Set(anchorBlockIds.map(anchorElementId));
-  const elements = api.getSceneElements().filter((el) => wanted.has(el.id) && isAnchor(el));
+  const wanted = new Set(blockIds);
+  const elements = api.getSceneElements().filter(
+    (el) =>
+      isBlockElement(el) && 'blockId' in el && wanted.has(el.blockId),
+  );
   if (elements.length === 0) return null;
   let minX = Infinity;
   let maxY = -Infinity;

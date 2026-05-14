@@ -17,6 +17,7 @@ import type {
   Theme,
   StrokeRoundness,
   ExcalidrawEmbeddableElement,
+  ExcalidrawBlockElement,
   ExcalidrawMagicFrameElement,
   ExcalidrawFrameLikeElement,
   ExcalidrawElementType,
@@ -581,6 +582,15 @@ export interface ExcalidrawProps {
     element: NonDeleted<ExcalidrawEmbeddableElement>,
     appState: AppState,
   ) => JSX.Element | null;
+  // math-editor fork: HTML overlay seam for the first-class block
+  // element types (`math`, `text-block`). The host returns the React
+  // subtree to render inside the element's bounds — typically a
+  // math-field or contenteditable. Returning null falls back to the
+  // canvas-only frame.
+  renderBlockContent?: (
+    element: NonDeleted<ExcalidrawBlockElement>,
+    appState: AppState,
+  ) => React.ReactNode;
   aiEnabled?: boolean;
   showDeprecatedFonts?: boolean;
 }

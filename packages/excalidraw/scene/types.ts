@@ -152,4 +152,9 @@ export type ElementShapes = {
   image: null;
   frame: null;
   magicframe: null;
+  // math-editor fork: block elements draw a rounded-rect frame inline
+  // in renderElement and host editable content via an HTML overlay.
+  // No rough.js Drawable is needed.
+  math: null;
+  "text-block": null;
 };

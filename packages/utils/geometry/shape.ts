@@ -48,6 +48,8 @@ import type {
   ExcalidrawRectangleElement,
   ExcalidrawSelectionElement,
   ExcalidrawTextElement,
+  ExcalidrawMathElement,
+  ExcalidrawTextBlockElement,
 } from "@excalidraw/excalidraw/element/types";
 import { pointsOnBezierCurves } from "points-on-curve";
 import type { Drawable, Op } from "roughjs/bin/core";
@@ -107,7 +109,11 @@ type RectangularElement =
   | ExcalidrawImageElement
   | ExcalidrawIframeElement
   | ExcalidrawTextElement
-  | ExcalidrawSelectionElement;
+  | ExcalidrawSelectionElement
+  // math-editor fork: blocks are axis-aligned rounded rectangles for
+  // hit-test purposes; the editable content rides on top via overlay.
+  | ExcalidrawMathElement
+  | ExcalidrawTextBlockElement;
 
 // polygon
 export const getPolygonShape = <Point extends GlobalPoint | LocalPoint>(

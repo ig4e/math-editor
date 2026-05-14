@@ -564,6 +564,47 @@ const renderElementToSvg = (
       }
       break;
     }
+    // math-editor fork: SVG export emits the frame (rounded rect with
+    // element bg/stroke) but not the editable content. The HTML overlay
+    // is DOM and can't be captured into SVG; this matches what
+    // `embeddable` does for the same reason. Stage C-future could
+    // optionally render KaTeX-as-SVG inside the rect for static export.
+    case "math":
+    case "text-block": {
+      const radius = Math.min(
+        Math.min(element.width, element.height) * 0.25,
+        16,
+      );
+      const rect = document.createElementNS(SVG_NS, "rect");
+      rect.setAttribute(
+        "transform",
+        `translate(${offsetX || 0} ${
+          offsetY || 0
+        }) rotate(${degree} ${cx} ${cy})`,
+      );
+      rect.setAttribute("width", `${element.width}px`);
+      rect.setAttribute("height", `${element.height}px`);
+      rect.setAttribute("rx", `${radius}`);
+      rect.setAttribute("ry", `${radius}`);
+      rect.setAttribute(
+        "fill",
+        element.backgroundColor && element.backgroundColor !== "transparent"
+          ? element.backgroundColor
+          : "none",
+      );
+      rect.setAttribute(
+        "stroke",
+        element.strokeColor && element.strokeColor !== "transparent"
+          ? element.strokeColor
+          : "none",
+      );
+      rect.setAttribute("stroke-width", `${element.strokeWidth || 1}`);
+      if (opacity !== 1) {
+        rect.setAttribute("opacity", `${opacity}`);
+      }
+      addToRoot(rect, element);
+      break;
+    }
     // frames are not rendered and only acts as a container
     case "frame":
     case "magicframe": {

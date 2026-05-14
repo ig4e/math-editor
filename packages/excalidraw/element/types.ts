@@ -163,6 +163,43 @@ export type ExcalidrawFrameElement = _ExcalidrawElementBase & {
   name: string | null;
 };
 
+// --- math-editor fork: first-class block element types ----------------
+// These replace the embeddable-with-mathblock://-link hack. The
+// element owns position / size / rotation / selection / bind-arrow
+// behavior natively; the actual editable content (math-field, contentEditable)
+// is rendered as an HTML overlay via the `renderBlockContent` prop on
+// <Excalidraw>. See packages/excalidraw/components/App.tsx (BlockOverlay)
+// for the mount site.
+//
+// `blockId` is the stable handle to the editor's block store entry that
+// holds the rich content (latex / text / note). Scene save/load round-
+// trips it; the editor materializes the store entry from the element
+// on restore.
+export type ExcalidrawMathElement = _ExcalidrawElementBase &
+  Readonly<{
+    type: "math";
+    blockId: string;
+    latex: string;
+    fontSize: number;
+    note?: string;
+    showNote?: boolean;
+  }>;
+
+export type ExcalidrawTextBlockElement = _ExcalidrawElementBase &
+  Readonly<{
+    type: "text-block";
+    blockId: string;
+    text: string;
+    fontSize: number;
+    note?: string;
+    showNote?: boolean;
+  }>;
+
+export type ExcalidrawBlockElement =
+  | ExcalidrawMathElement
+  | ExcalidrawTextBlockElement;
+// ----------------------------------------------------------------------
+
 export type ExcalidrawMagicFrameElement = _ExcalidrawElementBase & {
   type: "magicframe";
   name: string | null;
@@ -193,7 +230,8 @@ export type ExcalidrawRectanguloidElement =
   | ExcalidrawFreeDrawElement
   | ExcalidrawIframeLikeElement
   | ExcalidrawFrameLikeElement
-  | ExcalidrawEmbeddableElement;
+  | ExcalidrawEmbeddableElement
+  | ExcalidrawBlockElement;
 
 /**
  * ExcalidrawElement should be JSON serializable and (eventually) contain
@@ -210,7 +248,9 @@ export type ExcalidrawElement =
   | ExcalidrawFrameElement
   | ExcalidrawMagicFrameElement
   | ExcalidrawIframeElement
-  | ExcalidrawEmbeddableElement;
+  | ExcalidrawEmbeddableElement
+  | ExcalidrawMathElement
+  | ExcalidrawTextBlockElement;
 
 export type ExcalidrawNonSelectionElement = Exclude<
   ExcalidrawElement,
@@ -262,7 +302,9 @@ export type ExcalidrawBindableElement =
   | ExcalidrawIframeElement
   | ExcalidrawEmbeddableElement
   | ExcalidrawFrameElement
-  | ExcalidrawMagicFrameElement;
+  | ExcalidrawMagicFrameElement
+  | ExcalidrawMathElement
+  | ExcalidrawTextBlockElement;
 
 export type ExcalidrawTextContainer =
   | ExcalidrawRectangleElement

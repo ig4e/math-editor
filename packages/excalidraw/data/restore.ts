@@ -377,6 +377,26 @@ const restoreElement = (
         name: element.name ?? null,
       });
 
+    // math-editor fork: block elements carry content payload + a stable
+    // blockId so the editor's store can re-key on scene reload. Field
+    // defaults match what the editor writes on create.
+    case "math":
+      return restoreElementWithProperties(element, {
+        blockId: element.blockId ?? element.id,
+        latex: typeof element.latex === "string" ? element.latex : "",
+        fontSize: typeof element.fontSize === "number" ? element.fontSize : 18,
+        note: typeof element.note === "string" ? element.note : undefined,
+        showNote: typeof element.showNote === "boolean" ? element.showNote : false,
+      });
+    case "text-block":
+      return restoreElementWithProperties(element, {
+        blockId: element.blockId ?? element.id,
+        text: typeof element.text === "string" ? element.text : "",
+        fontSize: typeof element.fontSize === "number" ? element.fontSize : 14,
+        note: typeof element.note === "string" ? element.note : undefined,
+        showNote: typeof element.showNote === "boolean" ? element.showNote : false,
+      });
+
     // Don't use default case so as to catch a missing an element type case.
     // We also don't want to throw, but instead return void so we filter
     // out these unsupported elements from the restored array.

@@ -1,22 +1,26 @@
 // AppShell — the new app root, replacing the FlexLayout-based
 // Workspace from v2. Excalidraw is now THE host; every panel lives as
 // a tab inside Excalidraw's native <Sidebar>, math and text blocks
-// live as embeddable scene elements, and our extensions plug into
-// Excalidraw's documented slots:
+// are first-class scene element types (`math`, `text-block`), and our
+// extensions plug into Excalidraw's documented slots:
 //
-//   - <Sidebar>        → all panels (Solver, Variables, Graph, …)
-//   - <MainMenu>       → math-specific items beside Excalidraw's
-//   - <Footer>         → math toolbar + status strip
-//   - <WelcomeScreen>  → first-run hints (Excalidraw's own primitives)
-//   - renderTopRightUI → Add Math / Add Text + sidebar quick-launchers
-//
-// validateEmbeddable + renderEmbeddable wire math/text blocks as real
-// Excalidraw elements (see ../panels/canvas/anchors.ts + BlockEmbed).
+//   - <Sidebar>          → all panels (Solver, Variables, Graph, …)
+//   - <MainMenu>         → math-specific items beside Excalidraw's
+//   - <Footer>           → math toolbar + status strip
+//   - <WelcomeScreen>    → first-run hints (Excalidraw's own primitives)
+//   - renderTopRightUI   → Add Math / Add Text + sidebar quick-launchers
+//   - renderBlockContent → math-field / contenteditable HTML overlay
+//                          on top of each block scene element
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Excalidraw, Sidebar } from '@excalidraw/excalidraw';
+import { Excalidraw, Sidebar, isBlockElement } from '@excalidraw/excalidraw';
 import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
-import type { NonDeleted, ExcalidrawEmbeddableElement } from '@excalidraw/excalidraw/element/types';
+import type {
+  NonDeleted,
+  ExcalidrawBlockElement,
+  ExcalidrawMathElement,
+  ExcalidrawTextBlockElement,
+} from '@excalidraw/excalidraw/element/types';
 // SCSS barrel exported by the workspace fork of @excalidraw/excalidraw.
 // The published npm package shipped a single bundled `index.css`; the
 // source equivalent splits into app.scss + styles.scss + fonts/fonts.css,
@@ -31,9 +35,9 @@ import { CanvasWelcome } from '../panels/canvas/CanvasWelcome';
 import { CanvasTopRight } from '../panels/canvas/CanvasTopRight';
 import { CanvasTTDDialog } from '../panels/canvas/CanvasTTDDialog';
 import { SelectionToolbar } from '../panels/canvas/SelectionToolbar';
-import { useEmbeddableSync, isBlockLink, blockIdFromElement } from '../panels/canvas/anchors';
 import { setExcalidrawAPI, setSidebarToggler } from '../panels/canvas/inject';
 import { BlockEmbed } from '../panels/canvas/BlockEmbed';
+import { blockFromElement } from '../panels/canvas/blockElements';
 import { getAllPanels, subscribePanels } from './PanelRegistry';
 import { Icon } from '../components/Icons';
 import { Spinner } from '../components/common';
@@ -48,10 +52,9 @@ export function AppShell() {
   const setSheetSnapshot = useStore((s) => s.setSheetSnapshot);
   const setActiveSidebarTab = useStore((s) => s.setActiveSidebarTab);
   const activeSidebarTab = useStore((s) => s.activeSidebarTab);
+  const setSheetBlocks = useStore((s) => s.setSheetBlocks);
 
   const apiRef = useRef<ExcalidrawImperativeAPI | null>(null);
-
-  useEmbeddableSync(apiRef);
 
   // Re-render when panel registry changes (e.g. HMR adds a panel).
   const [, force] = useState(0);
@@ -85,21 +88,41 @@ export function AppShell() {
     });
   }, [activeSheetId, setSheetSnapshot]);
 
+  // scene → store mirror for blocks. Single direction: whatever the
+  // scene says is true; the store's `sheet.blocks` array exists so
+  // panels (Solver, Variables, AI, …) can keep their selectors. No
+  // write-back from store → scene during this hook — every mutation
+  // goes through panels/canvas/blockElements.ts -> api.updateScene,
+  // which feeds back here on the next onChange.
+  const mirrorBlocks = useCallback(() => {
+    const api = apiRef.current;
+    if (!api) return;
+    const blocks = [];
+    for (const el of api.getSceneElements()) {
+      if (isBlockElement(el)) {
+        blocks.push(blockFromElement(el as ExcalidrawMathElement | ExcalidrawTextBlockElement));
+      }
+    }
+    setSheetBlocks(activeSheetId, blocks);
+  }, [activeSheetId, setSheetBlocks]);
+
   const onChange = useCallback(() => {
+    mirrorBlocks();
     if (debounceTimer.current !== null) window.clearTimeout(debounceTimer.current);
     debounceTimer.current = window.setTimeout(persistScene, SCENE_DEBOUNCE_MS);
-  }, [persistScene]);
+  }, [persistScene, mirrorBlocks]);
 
   useEffect(() => () => {
     if (debounceTimer.current !== null) window.clearTimeout(debounceTimer.current);
     persistScene();
   }, [persistScene]);
 
-  const renderEmbeddable = useCallback((element: NonDeleted<ExcalidrawEmbeddableElement>) => {
-    const ref = blockIdFromElement(element);
-    if (!ref) return null;
-    return <BlockEmbed blockId={ref.id} type={ref.type} />;
-  }, []);
+  const renderBlockContent = useCallback(
+    (element: NonDeleted<ExcalidrawBlockElement>) => (
+      <BlockEmbed element={element} />
+    ),
+    [],
+  );
 
   // Imperative sidebar toggle for commands / panel-driven opens. We
   // expose it through the same inject module as the Excalidraw API.
@@ -139,7 +162,7 @@ export function AppShell() {
     <div className="absolute inset-0 bg-app">
       <Excalidraw
         key={activeSheetId}
-        excalidrawAPI={(api) => { apiRef.current = api; setExcalidrawAPI(api); }}
+        excalidrawAPI={(api) => { apiRef.current = api; setExcalidrawAPI(api); mirrorBlocks(); }}
         initialData={{
           ...(initialData ?? {}),
           appState: {
@@ -159,8 +182,7 @@ export function AppShell() {
         }}
         onChange={onChange}
         theme="dark"
-        validateEmbeddable={isBlockLink}
-        renderEmbeddable={renderEmbeddable}
+        renderBlockContent={renderBlockContent}
         renderTopRightUI={() => <CanvasTopRight apiRef={apiRef} />}
         UIOptions={{
           canvasActions: {

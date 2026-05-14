@@ -31,7 +31,9 @@ import type {
   ExcalidrawImageElement,
   ExcalidrawLinearElement,
   ExcalidrawMagicFrameElement,
+  ExcalidrawMathElement,
   ExcalidrawSelectionElement,
+  ExcalidrawTextBlockElement,
   ExcalidrawTextElement,
   FileId,
   FontFamilyValues,
@@ -200,7 +202,13 @@ export type ExcalidrawElementSkeleton =
       type: "magicframe";
       children: readonly ExcalidrawElement["id"][];
       name?: string;
-    } & Partial<ExcalidrawMagicFrameElement>);
+    } & Partial<ExcalidrawMagicFrameElement>)
+  // math-editor fork: block elements pass through the skeleton as
+  // fully-shaped element values (same contract as embeddable / iframe
+  // / freedraw above). The editor's createBlock helper is responsible
+  // for filling defaults — strokeColor, backgroundColor, roundness, etc.
+  | ExcalidrawMathElement
+  | ExcalidrawTextBlockElement;
 
 const DEFAULT_LINEAR_ELEMENT_PROPS = {
   width: 100,
@@ -609,7 +617,12 @@ export const convertToExcalidrawElements = (
       }
       case "freedraw":
       case "iframe":
-      case "embeddable": {
+      case "embeddable":
+      // math-editor fork: block elements pass through the skeleton
+      // unchanged; the editor's createBlock helper is responsible for
+      // shaping the skeleton with sensible defaults before the call.
+      case "math":
+      case "text-block": {
         excalidrawElement = element;
         break;
       }

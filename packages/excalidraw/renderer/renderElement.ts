@@ -468,6 +468,41 @@ const drawElementOnCanvas = (
       }
       break;
     }
+    // math-editor fork: blocks draw a rounded-rect frame with the
+    // element's stroke/fill colors. The actual content (math-field,
+    // contenteditable) is rendered as an HTML overlay positioned over
+    // this frame — see App.tsx → BlockOverlay. The frame stays visible
+    // during export (PNG/SVG) since the HTML overlay can't be captured.
+    case "math":
+    case "text-block": {
+      const radius = getCornerRadius(
+        Math.min(element.width, element.height),
+        element,
+      );
+      context.save();
+      context.lineJoin = "round";
+      context.lineCap = "round";
+      if (context.roundRect) {
+        context.beginPath();
+        context.roundRect(0, 0, element.width, element.height, radius);
+        if (
+          element.backgroundColor &&
+          element.backgroundColor !== "transparent"
+        ) {
+          context.fillStyle = element.backgroundColor;
+          context.globalAlpha = (element.opacity ?? 100) / 100;
+          context.fill();
+          context.globalAlpha = 1;
+        }
+        if (element.strokeColor && element.strokeColor !== "transparent") {
+          context.strokeStyle = element.strokeColor;
+          context.lineWidth = element.strokeWidth || 1;
+          context.stroke();
+        }
+      }
+      context.restore();
+      break;
+    }
     default: {
       if (isTextElement(element)) {
         const rtl = isRTL(element.text);
@@ -804,7 +839,13 @@ export const renderElement = (
     case "image":
     case "text":
     case "iframe":
-    case "embeddable": {
+    case "embeddable":
+    // math-editor fork: blocks route through the same cached-canvas
+    // render path as image/text. They have no rough.js shape, but
+    // ShapeCache returns null harmlessly and `drawElementOnCanvas`
+    // handles the frame draw inline.
+    case "math":
+    case "text-block": {
       // TODO investigate if we can do this in situ. Right now we need to call
       // beforehand because math helpers (such as getElementAbsoluteCoords)
       // rely on existing shapes

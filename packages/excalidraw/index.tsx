@@ -298,3 +298,12 @@ export { getDataURL } from "./data/blob";
 export { isElementLink } from "./element/elementLink";
 
 export { setCustomTextMetricsProvider } from "./element/textMeasurements";
+
+// math-editor fork: first-class block element guards. Editor uses
+// these to detect math / text-block elements without coupling to the
+// internal `link`-prefix scheme that Stage A/B used.
+export {
+  isMathElement,
+  isTextBlockElement,
+  isBlockElement,
+} from "./element/typeChecks";

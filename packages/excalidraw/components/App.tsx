@@ -155,6 +155,7 @@ import {
   isFrameLikeElement,
   isImageElement,
   isEmbeddableElement,
+  isBlockElement,
   isInitializedImageElement,
   isLinearElement,
   isLinearElementType,
@@ -186,6 +187,7 @@ import type {
   IframeData,
   ExcalidrawIframeElement,
   ExcalidrawEmbeddableElement,
+  ExcalidrawBlockElement,
   Ordered,
   MagicGenerationData,
   ExcalidrawNonSelectionElement,
@@ -1290,6 +1292,102 @@ class App extends React.Component<AppProps, AppState> {
     );
   }
 
+  /**
+   * math-editor fork: positions the host's `renderBlockContent` output
+   * over each `math` / `text-block` scene element. Mirrors the
+   * geometry of `renderEmbeddables` (translate to scene→viewport
+   * coords, scale by zoom, then rotate around the element's own
+   * center). Pointer events flow through the overlay only when the
+   * element is selected — otherwise Excalidraw owns drag/select so we
+   * disable interaction.
+   */
+  private renderBlocks() {
+    const renderBlockContent = this.props.renderBlockContent;
+    if (!renderBlockContent) {
+      return null;
+    }
+    const scale = this.state.zoom.value;
+    const elements = this.scene
+      .getNonDeletedElements()
+      .filter(
+        (el): el is Ordered<NonDeleted<ExcalidrawBlockElement>> =>
+          isBlockElement(el),
+      );
+
+    if (elements.length === 0) {
+      return null;
+    }
+
+    return (
+      <>
+        {elements.map((el) => {
+          const { x, y } = sceneCoordsToViewportCoords(
+            { sceneX: el.x, sceneY: el.y },
+            this.state,
+          );
+          const isSelected = !!this.state.selectedElementIds[el.id];
+          const isVisible = isElementInViewport(
+            el,
+            this.state.width,
+            this.state.height,
+            this.state,
+            this.scene.getNonDeletedElementsMap(),
+          );
+          if (!isVisible) {
+            return null;
+          }
+          const opacity = getRenderOpacity(
+            el,
+            getContainingFrame(el, this.scene.getNonDeletedElementsMap()),
+            this.elementsPendingErasure,
+            null,
+            1,
+          );
+          return (
+            <div
+              key={el.id}
+              className="excalidraw__block-container"
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                transform: `translate(${
+                  x - this.state.offsetLeft
+                }px, ${y - this.state.offsetTop}px) scale(${scale})`,
+                transformOrigin: "0 0",
+                width: `${el.width}px`,
+                height: `${el.height}px`,
+                opacity,
+                // When unselected, pointer events go to the canvas so
+                // the user can grab / drag the element. When selected
+                // (i.e. the user wants to type), we enable pointer
+                // events on the overlay.
+                pointerEvents: isSelected
+                  ? POINTER_EVENTS.enabled
+                  : POINTER_EVENTS.disabled,
+              }}
+            >
+              <div
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  transform: `rotate(${el.angle}rad)`,
+                  transformOrigin: "center",
+                  // Stop wheel / key events from reaching the canvas
+                  // while interacting with the block content.
+                }}
+                onWheel={(e) => isSelected && e.stopPropagation()}
+                onKeyDown={(e) => isSelected && e.stopPropagation()}
+              >
+                {renderBlockContent(el, this.state)}
+              </div>
+            </div>
+          );
+        })}
+      </>
+    );
+  }
+
   private getFrameNameDOMId = (frameElement: ExcalidrawElement) => {
     return `${this.id}-frame-name-${frameElement.id}`;
   };
@@ -1620,21 +1718,11 @@ class App extends React.Component<AppProps, AppState> {
                           this.state.openDialog?.name !==
                             "elementLinkSelector" &&
                           this.state.showHyperlinkPopup &&
-                          // math-editor fork: suppress the hyperlink hint
-                          // for block embeddables (links of the form
-                          // `mathblock://...` / `textblock://...`).
-                          // Those links are an internal addressing scheme,
-                          // not a user-facing URL. Stage C makes math /
-                          // text blocks first-class element types and the
-                          // `link` field disappears here entirely.
-                          !(
-                            firstSelectedElement.link?.startsWith(
-                              "mathblock://",
-                            ) ||
-                            firstSelectedElement.link?.startsWith(
-                              "textblock://",
-                            )
-                          ) && (
+                          // math-editor fork: math / text-block elements
+                          // are first-class types and never carry a
+                          // user-facing link, so the popup just doesn't
+                          // apply to them.
+                          !isBlockElement(firstSelectedElement) && (
                             <Hyperlink
                               key={firstSelectedElement.id}
                               element={firstSelectedElement}
@@ -1822,6 +1910,7 @@ class App extends React.Component<AppProps, AppState> {
                         {this.renderFrameNames()}
                       </ExcalidrawActionManagerContext.Provider>
                       {this.renderEmbeddables()}
+                      {this.renderBlocks()}
                     </ExcalidrawElementsContext.Provider>
                   </ExcalidrawAppStateContext.Provider>
                 </ExcalidrawSetAppStateContext.Provider>
@@ -6044,20 +6133,11 @@ class App extends React.Component<AppProps, AppState> {
     if (isEraserActive(this.state)) {
       return;
     }
-    // math-editor fork: treat block embeddables (mathblock:// /
-    // textblock://) as if they had no link for the hover-hint
-    // pipeline. The link IS the internal addressing scheme — we don't
-    // want the URL chrome, cursor change, or "info" popup. Stage C
-    // moves these to a real element type and the special-case goes
-    // away.
-    const hitIsBlockEmbed = !!(
-      this.hitLinkElement?.link?.startsWith("mathblock://") ||
-      this.hitLinkElement?.link?.startsWith("textblock://")
-    );
-
     if (
       this.hitLinkElement &&
-      !hitIsBlockEmbed &&
+      // math-editor fork: block elements never produce a hyperlink hint
+      // since they're first-class types without a user link.
+      !isBlockElement(this.hitLinkElement) &&
       !this.state.selectedElementIds[this.hitLinkElement.id]
     ) {
       setCursor(this.interactiveCanvas, CURSOR_TYPE.POINTER);
@@ -6068,13 +6148,9 @@ class App extends React.Component<AppProps, AppState> {
       );
     } else {
       hideHyperlinkToolip();
-      const hoverIsBlockEmbed = !!(
-        hitElement?.link?.startsWith("mathblock://") ||
-        hitElement?.link?.startsWith("textblock://")
-      );
       if (
         hitElement &&
-        !hoverIsBlockEmbed &&
+        !isBlockElement(hitElement) &&
         (hitElement.link || isEmbeddableElement(hitElement)) &&
         this.state.selectedElementIds[hitElement.id] &&
         !this.state.contextMenu &&

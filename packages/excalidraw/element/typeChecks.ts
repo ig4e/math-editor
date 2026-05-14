@@ -26,6 +26,9 @@ import type {
   PointBinding,
   FixedPointBinding,
   ExcalidrawFlowchartNodeElement,
+  ExcalidrawMathElement,
+  ExcalidrawTextBlockElement,
+  ExcalidrawBlockElement,
 } from "./types";
 
 export const isInitializedImageElement = (
@@ -86,6 +89,28 @@ export const isFrameLikeElement = (
     (element.type === "frame" || element.type === "magicframe")
   );
 };
+
+// --- math-editor fork: first-class block element guards ----------------
+export const isMathElement = (
+  element: ExcalidrawElement | null | undefined,
+): element is ExcalidrawMathElement => {
+  return !!element && element.type === "math";
+};
+
+export const isTextBlockElement = (
+  element: ExcalidrawElement | null | undefined,
+): element is ExcalidrawTextBlockElement => {
+  return !!element && element.type === "text-block";
+};
+
+export const isBlockElement = (
+  element: ExcalidrawElement | null | undefined,
+): element is ExcalidrawBlockElement => {
+  return (
+    !!element && (element.type === "math" || element.type === "text-block")
+  );
+};
+// -----------------------------------------------------------------------
 
 export const isFreeDrawElement = (
   element?: ExcalidrawElement | null,
@@ -157,6 +182,8 @@ export const isBindableElement = (
       element.type === "embeddable" ||
       element.type === "frame" ||
       element.type === "magicframe" ||
+      element.type === "math" ||
+      element.type === "text-block" ||
       (element.type === "text" && !element.containerId))
   );
 };
@@ -173,6 +200,8 @@ export const isRectanguloidElement = (
       element.type === "embeddable" ||
       element.type === "frame" ||
       element.type === "magicframe" ||
+      element.type === "math" ||
+      element.type === "text-block" ||
       (element.type === "text" && !element.containerId))
   );
 };
@@ -191,6 +220,8 @@ export const isRectangularElement = (
       element.type === "embeddable" ||
       element.type === "frame" ||
       element.type === "magicframe" ||
+      element.type === "math" ||
+      element.type === "text-block" ||
       element.type === "freedraw")
   );
 };
@@ -229,6 +260,8 @@ export const isExcalidrawElement = (
     case "frame":
     case "magicframe":
     case "image":
+    case "math":
+    case "text-block":
     case "selection": {
       return true;
     }
@@ -273,7 +306,9 @@ export const isUsingAdaptiveRadius = (type: string) =>
   type === "rectangle" ||
   type === "embeddable" ||
   type === "iframe" ||
-  type === "image";
+  type === "image" ||
+  type === "math" ||
+  type === "text-block";
 
 export const isUsingProportionalRadius = (type: string) =>
   type === "line" || type === "arrow" || type === "diamond";

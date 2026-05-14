@@ -521,7 +521,13 @@ export const _generateElementShape = (
     case "frame":
     case "magicframe":
     case "text":
-    case "image": {
+    case "image":
+    // math + text-block draw a rounded-rect frame on canvas (rendered
+    // inline in renderElement) but don't need a rough.js Drawable since
+    // the actual content is an HTML overlay. Return null to skip
+    // rough generation, same as text + image.
+    case "math":
+    case "text-block": {
       const shape: ElementShapes[typeof element.type] = null;
       // we return (and cache) `null` to make sure we don't regenerate
       // `element.canvas` on rerenders

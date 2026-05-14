@@ -270,6 +270,10 @@ const renderBindingHighlightForBindableElement = (
     case "embeddable":
     case "frame":
     case "magicframe":
+    // math-editor fork: blocks use the same selection-box stroke as
+    // rectanguloid elements.
+    case "math":
+    case "text-block":
       strokeRectWithRotation(
         context,
         x1 - padding,
