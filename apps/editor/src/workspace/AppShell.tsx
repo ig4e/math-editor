@@ -107,11 +107,28 @@ export function AppShell() {
     [],
   );
 
+  // The persisted snapshot lives inside the zustand store, which means
+  // immer ran `produce()` on it on the way in and froze every object
+  // it contained (`Object.freeze` is immer's default on dev + prod).
+  // Excalidraw owns the scene mutably once initialised — its
+  // `mutateElement` writes `element.x = …` during drag/resize. Frozen
+  // elements throw `Cannot assign to read only property 'x'` the
+  // moment the user grabs anything. Deep-clone the snapshot before
+  // handing it over so Excalidraw sees a regular, mutable tree.
+  // `structuredClone` is supported everywhere we ship and handles
+  // nested arrays / Maps / null cleanly.
   const [initialData] = useState(() => {
     const snap = sheet?.excalidrawSnapshot;
-    return snap && typeof snap === 'object'
-      ? (snap as Record<string, unknown>)
-      : undefined;
+    if (!snap || typeof snap !== 'object') return undefined;
+    try {
+      return structuredClone(snap) as Record<string, unknown>;
+    } catch {
+      // Fallback for the rare environment without structuredClone or
+      // when the snapshot contains an unclonable shape (e.g. a function
+      // someone snuck in via a custom field). JSON round-trip drops
+      // non-serializable bits, which is fine for the snapshot.
+      return JSON.parse(JSON.stringify(snap)) as Record<string, unknown>;
+    }
   });
 
   // Pre-load our curated math-diagram templates as Excalidraw's
@@ -137,15 +154,35 @@ export function AppShell() {
   }, []);
 
   const debounceTimer = useRef<number | null>(null);
+  // CRITICAL: deep-clone the scene array + every element before handing
+  // it to the store. The store is zustand+immer, and immer freezes
+  // everything it commits. If we passed Excalidraw's *live* scene
+  // array, immer would freeze the array AND every element object
+  // inside it — and the very next pointer-move would crash with
+  // "Cannot assign to read only property 'x'" because Excalidraw's
+  // own `mutateElement` writes element.x/y in place. Snapshotting via
+  // structuredClone severs that link: the store holds a frozen deep
+  // copy, the scene keeps its mutable originals.
   const persistScene = useCallback(() => {
     if (!apiRef.current) return;
     const elements = apiRef.current.getSceneElements();
     const appState = apiRef.current.getAppState();
     const files = apiRef.current.getFiles();
+    let snapshotElements: unknown;
+    let snapshotFiles: unknown;
+    try {
+      snapshotElements = structuredClone(elements);
+      snapshotFiles = structuredClone(files);
+    } catch {
+      // JSON round-trip is safe here: scene elements are pure-data
+      // shapes Excalidraw can re-restore from JSON.
+      snapshotElements = JSON.parse(JSON.stringify(elements));
+      snapshotFiles = JSON.parse(JSON.stringify(files));
+    }
     setSheetSnapshot(activeSheetId, {
-      elements,
+      elements: snapshotElements,
       appState: serializeAppState(appState),
-      files,
+      files: snapshotFiles,
     });
   }, [activeSheetId, setSheetSnapshot]);
 
