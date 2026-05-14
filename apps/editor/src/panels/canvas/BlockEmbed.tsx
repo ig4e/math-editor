@@ -36,11 +36,26 @@ interface Props {
   element: ExcalidrawMathElement | ExcalidrawTextBlockElement;
 }
 
+// Theme-safe fallback for the editable surface. `currentColor`
+// won't help here — the BlockEmbed lives inside Excalidraw's
+// canvas overlay tree, where no ancestor sets a `color` property,
+// so `currentColor` resolves to the browser default (#000) and
+// the math/text content disappears on our true-dark canvas.
+// Pick an explicit value that contrasts with the canvas.
+const DEFAULT_INK = '#e5e5e5';
+
 /** Pick a usable CSS colour for the editable surface. Falls back to
- *  the theme's foreground (`currentColor`) for the placeholder
- *  'transparent' that Excalidraw uses to mean "no explicit colour". */
+ *  `DEFAULT_INK` for the placeholder 'transparent' AND for
+ *  Excalidraw's stock #1e1e1e default — the latter is near-black,
+ *  invisible on our true-dark canvas. This makes welcome-seeded
+ *  blocks (and any other block that pre-dates the visible-default
+ *  colour) readable without a migration. */
 function inkColor(strokeColor: string | undefined): string {
-  if (!strokeColor || strokeColor === 'transparent') return 'currentColor';
+  if (!strokeColor) return DEFAULT_INK;
+  const normalised = strokeColor.toLowerCase();
+  if (normalised === 'transparent' || normalised === '#1e1e1e') {
+    return DEFAULT_INK;
+  }
   return strokeColor;
 }
 

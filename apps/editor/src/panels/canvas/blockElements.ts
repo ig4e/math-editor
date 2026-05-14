@@ -39,6 +39,19 @@ const TEXT_DEFAULT_H = 64;
 const DEFAULT_MATH_FONT = 22;
 const DEFAULT_TEXT_FONT = 16;
 
+// Excalidraw's `DEFAULT_ELEMENT_PROPS.strokeColor` is `#1e1e1e`, which
+// reads beautifully on Excalidraw's stock light/dark canvas (their
+// "dark" theme actually keeps the bg light-ish so #1e1e1e is legible).
+// Math Notebook is true-dark on a #121212 canvas — black strokes are
+// invisible there. We override the block creation defaults with a
+// theme-aware light gray so freshly-created blocks have a visible
+// frame AND visible content (BlockEmbed maps `strokeColor` straight
+// to the math-field / contenteditable `color`).
+const DEFAULT_BLOCK_STROKE_COLOR = '#e5e5e5';
+// Transparent so the canvas frame is the only visible fill; lets
+// users see what's behind a block without it acting as a sticky note.
+const DEFAULT_BLOCK_BACKGROUND_COLOR = 'transparent';
+
 // ----- create ----------------------------------------------------------
 
 // blockId is always equal to the underlying element.id. We pass a
@@ -70,6 +83,8 @@ export function addMathElement(
     blockId: '',
     latex: opts.latex ?? '',
     fontSize: opts.fontSize ?? DEFAULT_MATH_FONT,
+    strokeColor: DEFAULT_BLOCK_STROKE_COLOR,
+    backgroundColor: DEFAULT_BLOCK_BACKGROUND_COLOR,
     ...(opts.note !== undefined ? { note: opts.note } : {}),
     showNote: opts.showNote ?? false,
   } as ExcalidrawElementSkeleton;
@@ -104,6 +119,8 @@ export function addTextBlockElement(
     blockId: '',
     text: opts.text ?? '',
     fontSize: opts.fontSize ?? DEFAULT_TEXT_FONT,
+    strokeColor: DEFAULT_BLOCK_STROKE_COLOR,
+    backgroundColor: DEFAULT_BLOCK_BACKGROUND_COLOR,
     ...(opts.note !== undefined ? { note: opts.note } : {}),
     showNote: opts.showNote ?? false,
   } as ExcalidrawElementSkeleton;
