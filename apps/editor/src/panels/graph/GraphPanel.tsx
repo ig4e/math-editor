@@ -3,7 +3,7 @@
 // live substitutions. Ribbon: grid / equal-axes toggle, fit-to-view,
 // "Pin to canvas". Left column: plot list (toggle, color, equation tag).
 
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useStore } from '../../state/store';
 import { useActiveSheet, useSelectedMathBlocks } from '../../state/selectors';
 import { detectAll } from '../variables/parser';
@@ -56,19 +56,25 @@ export default function GraphPanel() {
   const [grid, setGrid] = useState(true);
   const [equalScale, setEqualScale] = useState(false);
 
-  // Refresh entries when the underlying blocks change.
-  useMemo(() => {
-    // Compare by blockId set + latex to decide if we need to re-derive.
-    // Cheap: serialize.
-    const key = baseBlocks.map((b) =>
-      b.type === 'math' ? `${b.id}:${b.latex}` : '',
-    ).join('|');
-    setEntries((prev) => {
-      const prevKey = prev.map((e) => `${e.blockId}:?`).join('|');
-      if (key === prevKey) return prev;
-      return initialEntries;
-    });
-  }, [baseBlocks, initialEntries]);
+  // Refresh entries when the underlying blocks actually change. The key
+  // is serialized inside the effect so we don't re-derive when only the
+  // array *reference* changed (filter/ternary return a new array every
+  // render). Must be useEffect — calling setEntries inside useMemo runs
+  // during render and triggers an infinite loop because
+  // baseBlocks/initialEntries are new refs every render.
+  const entriesKey = useMemo(
+    () =>
+      baseBlocks
+        .map((b) => (b.type === 'math' ? `${b.id}:${b.latex}` : ''))
+        .join('|'),
+    [baseBlocks],
+  );
+  useEffect(() => {
+    setEntries(initialEntries);
+    // initialEntries is intentionally omitted; entriesKey already
+    // captures the meaningful change set.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entriesKey]);
 
   // Variables → numeric substitutions for the plot.
   const variables = useMemo(() => {
