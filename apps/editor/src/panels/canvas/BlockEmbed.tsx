@@ -97,11 +97,42 @@ function MathBody({ element }: { element: ExcalidrawMathElement }) {
   const mfRef = useRef<MathfieldElement | null>(null);
   const setActive = useStore((s) => s.setActiveMathBlockId);
 
+  // Set the LaTeX on the <math-field> reliably. Two timing edge cases
+  // we have to handle:
+  //
+  // 1. The <math-field> custom element may not be defined yet when
+  //    React mounts it (mathlive registers the element on first
+  //    import; if Vite splits chunks unfavourably, our useEffect can
+  //    run before that registration). When `mfRef.current.value = …`
+  //    runs on an un-upgraded element, the assignment is silently
+  //    swallowed and you end up with an empty math field. Block on
+  //    `customElements.whenDefined('math-field')` first.
+  //
+  // 2. JSX children (`<math-field>{latex}</math-field>`) don't
+  //    reliably initialise mathlive's internal value across React 19
+  //    + custom-element upgrade ordering. We drop them and rely on
+  //    the `value` property setter exclusively — which is mathlive's
+  //    documented entry point anyway.
   useEffect(() => {
-    const mf = mfRef.current;
-    if (mf && mf.value !== element.latex) {
-      mf.value = element.latex;
+    let cancelled = false;
+    const apply = () => {
+      const mf = mfRef.current;
+      if (!mf || cancelled) return;
+      if (mf.value !== element.latex) {
+        mf.value = element.latex;
+      }
+    };
+    if (
+      typeof customElements !== 'undefined' &&
+      !customElements.get('math-field')
+    ) {
+      customElements.whenDefined('math-field').then(apply, () => {});
+    } else {
+      apply();
     }
+    return () => {
+      cancelled = true;
+    };
   }, [element.latex]);
 
   const onInput = useCallback(() => {
@@ -118,7 +149,8 @@ function MathBody({ element }: { element: ExcalidrawMathElement }) {
           pointer events so clicking ON the math content focuses it
           for editing. The block's empty padding stays pointer-events:
           none (inherited from the container) so the canvas can catch
-          drags from there. */}
+          drags from there. No initial children — see the useEffect
+          comment above for why. */}
       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       <math-field
         ref={mfRef as any}
@@ -126,9 +158,7 @@ function MathBody({ element }: { element: ExcalidrawMathElement }) {
         onFocus={() => setActive(element.blockId)}
         onBlur={() => setActive(null)}
         className="block w-full pointer-events-auto"
-      >
-        {element.latex}
-      </math-field>
+      />
     </div>
   );
 }
