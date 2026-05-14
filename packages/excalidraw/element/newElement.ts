@@ -657,6 +657,14 @@ export const duplicateElement = <TElement extends ExcalidrawElement>(
   copy.boundElements = null;
   copy.updated = getUpdatedTimestamp();
   copy.seed = randomInteger();
+  // math-editor fork: block elements use blockId as the editor's
+  // store key. Duplicating without regenerating it would point both
+  // copies at the same store entry. Mirroring blockId to the freshly
+  // regenerated element id keeps the two in lockstep, so paste +
+  // duplicate "just work" without any post-paste fix-up.
+  if (copy.type === "math" || copy.type === "text-block") {
+    (copy as unknown as { blockId: string }).blockId = copy.id;
+  }
   copy.groupIds = getNewGroupIdsForDuplication(
     copy.groupIds,
     editingGroupId,

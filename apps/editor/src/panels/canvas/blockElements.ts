@@ -39,18 +39,26 @@ const TEXT_DEFAULT_H = 64;
 const DEFAULT_MATH_FONT = 22;
 const DEFAULT_TEXT_FONT = 16;
 
-function nextId(): string {
-  return `block-${Math.random().toString(36).slice(2, 11)}`;
-}
-
 // ----- create ----------------------------------------------------------
+
+// blockId is always equal to the underlying element.id. We pass a
+// placeholder into convertToExcalidrawElements so the skeleton typecheck
+// is happy, then overwrite it on the produced element. The returned
+// string is the element.id, which is what the store keys on.
+function harmonizeBlockId(
+  built: readonly { id: string }[],
+): string | null {
+  const first = built[0];
+  if (!first) return null;
+  (first as unknown as { blockId: string }).blockId = first.id;
+  return first.id;
+}
 
 export function addMathElement(
   opts: Partial<MathBlock> = {},
 ): string | null {
   const api = getExcalidrawAPI();
   if (!api) return null;
-  const id = nextId();
   const elements = api.getSceneElements();
   const skeleton: ExcalidrawElementSkeleton = {
     type: 'math',
@@ -58,26 +66,26 @@ export function addMathElement(
     y: opts.y ?? 100,
     width: DEFAULT_W,
     height: MATH_DEFAULT_H,
-    blockId: id,
+    // Placeholder — overwritten with element.id below.
+    blockId: '',
     latex: opts.latex ?? '',
     fontSize: opts.fontSize ?? DEFAULT_MATH_FONT,
     ...(opts.note !== undefined ? { note: opts.note } : {}),
     showNote: opts.showNote ?? false,
   } as ExcalidrawElementSkeleton;
   const built = convertToExcalidrawElements([skeleton]);
-  const first = built[0];
+  const id = harmonizeBlockId(built);
+  if (!id) return null;
   api.updateScene({
     elements: [...elements, ...built],
     captureUpdate: 'capture' as unknown as never,
   });
   api.setActiveTool({ type: 'selection' });
-  if (first) {
-    // Select the new block so the user can immediately type.
-    api.updateScene({
-      appState: { selectedElementIds: { [first.id]: true } } as never,
-      captureUpdate: 'never' as unknown as never,
-    });
-  }
+  // Select the new block so the user can immediately type.
+  api.updateScene({
+    appState: { selectedElementIds: { [id]: true } } as never,
+    captureUpdate: 'never' as unknown as never,
+  });
   return id;
 }
 
@@ -86,7 +94,6 @@ export function addTextBlockElement(
 ): string | null {
   const api = getExcalidrawAPI();
   if (!api) return null;
-  const id = nextId();
   const elements = api.getSceneElements();
   const skeleton: ExcalidrawElementSkeleton = {
     type: 'text-block',
@@ -94,25 +101,24 @@ export function addTextBlockElement(
     y: opts.y ?? 100,
     width: DEFAULT_W,
     height: TEXT_DEFAULT_H,
-    blockId: id,
+    blockId: '',
     text: opts.text ?? '',
     fontSize: opts.fontSize ?? DEFAULT_TEXT_FONT,
     ...(opts.note !== undefined ? { note: opts.note } : {}),
     showNote: opts.showNote ?? false,
   } as ExcalidrawElementSkeleton;
   const built = convertToExcalidrawElements([skeleton]);
-  const first = built[0];
+  const id = harmonizeBlockId(built);
+  if (!id) return null;
   api.updateScene({
     elements: [...elements, ...built],
     captureUpdate: 'capture' as unknown as never,
   });
   api.setActiveTool({ type: 'selection' });
-  if (first) {
-    api.updateScene({
-      appState: { selectedElementIds: { [first.id]: true } } as never,
-      captureUpdate: 'never' as unknown as never,
-    });
-  }
+  api.updateScene({
+    appState: { selectedElementIds: { [id]: true } } as never,
+    captureUpdate: 'never' as unknown as never,
+  });
   return id;
 }
 
@@ -184,11 +190,13 @@ export function duplicateBlockElement(blockId: string): string | null {
   if (!api) return null;
   const source = findBlockElement(blockId);
   if (!source) return null;
-  const newId = nextId();
   const elements = api.getSceneElements();
+  // Generate a single fresh id; blockId mirrors element.id so paste +
+  // duplicate share one source of uniqueness.
+  const newId = `${source.id}-copy-${Math.random().toString(36).slice(2, 8)}`;
   const copy = {
     ...source,
-    id: `${source.id}-copy-${Math.random().toString(36).slice(2, 8)}`,
+    id: newId,
     blockId: newId,
     x: source.x + 30,
     y: source.y + 30,
@@ -198,7 +206,7 @@ export function duplicateBlockElement(blockId: string): string | null {
     captureUpdate: 'capture' as unknown as never,
   });
   api.updateScene({
-    appState: { selectedElementIds: { [copy.id]: true } } as never,
+    appState: { selectedElementIds: { [newId]: true } } as never,
     captureUpdate: 'never' as unknown as never,
   });
   return newId;

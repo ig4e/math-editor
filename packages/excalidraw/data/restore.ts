@@ -377,12 +377,14 @@ const restoreElement = (
         name: element.name ?? null,
       });
 
-    // math-editor fork: block elements carry content payload + a stable
-    // blockId so the editor's store can re-key on scene reload. Field
-    // defaults match what the editor writes on create.
+    // math-editor fork: block elements use blockId as the editor's
+    // store key. We pin blockId to element.id so the two never drift —
+    // self-heals any legacy scenes that stored a different blockId,
+    // and means clipboard paste (which regenerates element.id) also
+    // regenerates the store key for free.
     case "math":
       return restoreElementWithProperties(element, {
-        blockId: element.blockId ?? element.id,
+        blockId: element.id,
         latex: typeof element.latex === "string" ? element.latex : "",
         fontSize: typeof element.fontSize === "number" ? element.fontSize : 18,
         note: typeof element.note === "string" ? element.note : undefined,
@@ -390,7 +392,7 @@ const restoreElement = (
       });
     case "text-block":
       return restoreElementWithProperties(element, {
-        blockId: element.blockId ?? element.id,
+        blockId: element.id,
         text: typeof element.text === "string" ? element.text : "",
         fontSize: typeof element.fontSize === "number" ? element.fontSize : 14,
         note: typeof element.note === "string" ? element.note : undefined,
