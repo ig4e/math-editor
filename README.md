@@ -1,5 +1,14 @@
 # Math Notebook
 
+> ## ⚠️ ABANDONED / UNMAINTAINED
+>
+> **This project is no longer maintained as of 2026-05-14.**
+>
+> The repository has been archived on GitHub and is provided as-is for
+> reference. There will be no further commits, releases, bug fixes,
+> security patches, or responses to issues and pull requests. Forks are
+> welcome — feel free to take this in whatever direction you like.
+
 A best-in-class **math notebook** that runs in the browser. Free for end
 users, offline-first, bring-your-own-key for AI. Built on Excalidraw,
 MathLive, the Cortex Compute Engine, JSXGraph, three.js, Pyodide, and
